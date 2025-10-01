@@ -1,0 +1,82 @@
+/* ==UserStyle==
+@name        tv.twitch.m; streamline following page
+@version     1.1.5
+@description 2024/08/02, 5:41 PM
+@namespace   https://github.com/ericchase/browseruserstyles
+==/UserStyle== */
+@-moz-document url-prefix("https://m.twitch.tv/directory/following/live")
+{
+  #root:not(#fake) > div {
+    display: none !important;
+  }
+  main:not(#fake),
+  main:not(#fake) > div {
+    padding-top: 0 !important;
+  }
+  main:not(#fake) > div > h2,
+  main:not(#fake) > div > div {
+    display: none !important;
+  }
+  main:not(#fake) > div > h2:nth-of-type(2),
+  main:not(#fake) > div > div:nth-of-type(2) {
+    display: unset !important;
+  }
+
+  .tw-grid > .tw-col:nth-of-type(1) {
+    flex: 0 0 60%;
+    max-width: 60%;
+  }
+  .tw-grid > .tw-col:nth-of-type(2) {
+    flex: 0 0 40%;
+    max-width: 40%;
+  }
+  .tw-grid > .tw-col img {
+    width: 100%;
+    height: auto;
+  }
+
+  /* -- OLD VERSION -- */
+
+  /* #root:not(#fake) > div {
+    display: none !important;
+  }
+  main:not(#fake) {
+    > div {
+      > div:first-of-type {
+        > div:not(:first-of-type),
+        > h2 {
+          display: none !important;
+        }
+        > div {
+          margin: 0 !important;
+          padding: 0.5em !important;
+        }
+        > h2 {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      > div:not(:first-of-type) {
+        display: none !important;
+      }
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .tw-grid > .tw-col:nth-of-type(1) {
+    flex: 0 0 60%;
+    max-width: 60%;
+  }
+  .tw-grid > .tw-col:nth-of-type(2) {
+    flex: 0 0 40%;
+    max-width: 40%;
+  }
+  .tw-grid > .tw-col img {
+    width: 100%;
+    height: auto;
+  } */
+}

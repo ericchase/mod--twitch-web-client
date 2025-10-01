@@ -1,0 +1,12 @@
+/* ==UserStyle==
+@name        tv.twitch; channel card max-width=320px
+@version     1.0.0
+@description 2025/03/21, 2:51:29 PM
+@namespace   https://github.com/ericchase/browseruserstyles
+==/UserStyle== */
+@-moz-document url-prefix("https://www.twitch.tv/directory/following/live")
+{
+  div:has(> div.live-channel-card) {
+    max-width: 320px;
+  }
+}

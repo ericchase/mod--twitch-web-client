@@ -1,0 +1,24 @@
+/* ==UserStyle==
+@name        tv.twitch; hide cookies notification
+@version     1.0.0
+@description 2023/02/20, 8:22:36 PM
+@namespace   https://github.com/ericchase/browseruserstyles
+==/UserStyle== */
+@-moz-document url-prefix("https://www.twitch.tv")
+{
+  #root > [class|='Layout'] > [class|='Layout'] > [class|='Layout'],
+  [aria-label^='Intended for'] {
+    display: none;
+  }
+}
+@-moz-document url-prefix("https://clips.twitch.tv")
+{
+  #root > [class|='Layout'] > [class|='Layout'] > [class|='Layout'] {
+    display: none;
+  }
+}
+@-moz-document domain("dashboard.twitch.tv") {
+  #root > [class|='Layout'] {
+    display: none;
+  }
+}

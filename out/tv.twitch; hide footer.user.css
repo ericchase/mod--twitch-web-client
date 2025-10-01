@@ -1,0 +1,12 @@
+/* ==UserStyle==
+@name        tv.twitch; hide footer
+@version     1.0.0
+@description 2025/08/30, 2:41:26 PM
+@namespace   https://github.com/ericchase/browseruserstyles
+==/UserStyle== */
+@-moz-document url-prefix("https://www.twitch.tv/")
+{
+  footer#twilight-sticky-footer-root {
+    display: none;
+  }
+}

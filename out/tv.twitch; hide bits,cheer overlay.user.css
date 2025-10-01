@@ -1,0 +1,53 @@
+/* ==UserStyle==
+@name        tv.twitch; hide bits,cheer overlay
+@version     1.0.2
+@description 2025/06/18, 10:43:32 PM
+@namespace   https://github.com/ericchase/browseruserstyles
+==/UserStyle== */
+@-moz-document domain("twitch.tv") {
+  /* bits player overlay (aka [class*="oneTapStoreMenu"]) */
+  div:has(> div > div#one-tap-store-id) {
+    display: none !important;
+  }
+  /* cheer */
+  button[aria-label='Cheer'] {
+    display: none !important;
+  }
+  /* bits */
+  button[aria-label='Bits and Points Balances'] {
+    /* there are three divs in the path */
+    > div > div > div {
+      /* bits icon is right before bits balance */
+      > div:has(+ div[data-test-selector='bits-balance-string']) {
+        display: none !important;
+      }
+      /* bits balance has data attribute*/
+      > div[data-test-selector='bits-balance-string'] {
+        display: none !important;
+      }
+    }
+  }
+  /* rewards popup */
+  div.reward-center__content.reward-center__content__with-bits-rewards {
+    > div.scrollable-area {
+      div.rewards-list {
+        /* power-up text */
+        > div:has(> p) {
+          display: none !important;
+        }
+        /* power-up buttons */
+        > div:has(> button > div[class*='bitsRewardListItemImage']) {
+          display: none !important;
+        }
+        /* rewards text */
+        > div:has(> div > p) {
+          display: none !important;
+        }
+      }
+    }
+    /* first div is bits at this time */
+    > div.scrollable-area + div > div:first-of-type {
+      display: none !important;
+    }
+  }
+}

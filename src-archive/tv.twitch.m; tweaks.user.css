@@ -1,0 +1,27 @@
+/* ==UserStyle==
+@name        tv.twitch.m; tweaks
+@version     1.0.0
+@description 2024/08/02, 7:32:28 PM
+@namespace   https://github.com/ericchase/browseruserstyles
+==/UserStyle== */
+
+/* Notes
+It would be best add the following url to the "Custom excluded sites"
+setting: *://m.twitch.tv/directory/*
+*/
+
+@-moz-document url-prefix("https://m.twitch.tv/")
+{
+  #root:not(#fake) > div,
+  main:not(#fake) > div > div > div:nth-of-type(2) > div > div > div > div > div:nth-of-type(2) {
+    display: none !important;
+  }
+  main:not(#fake),
+  main:not(#fake) > div {
+    padding-top: 0 !important;
+  }
+
+  button[aria-label='Unfollow'] {
+    display: none;
+  }
+}

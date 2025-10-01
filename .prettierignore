@@ -1,0 +1,20 @@
+# Patterns from .gitignore are included
+
+*-lock.json
+*-lock.yaml
+bun.lock
+
+/coverage/
+/docs/
+/tools/**/bundle/
+
+## Project Specific
+
+# these do not need to be regularly formatted
+/server/
+/src/lib/ericchase/
+/tools/*/*
+
+# up to you whether you want to format the build files
+# /out/
+/src-archive/
