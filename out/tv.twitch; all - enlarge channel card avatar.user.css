@@ -1,0 +1,11 @@
+/* ==UserStyle==
+@name        tv.twitch; all - enlarge channel card avatar
+@version     1.0.0
+@description 2025/10/01
+@namespace   https://github.com/ericchase/browseruserstyles
+==/UserStyle== */
+@-moz-document regexp("^https:\\/\\/www\\.twitch\\.tv\\/?.*$") {
+  div[class*='ScImageWrapper']:has(img.tw-image-avatar) {
+    flex: 0 0 8rem;
+  }
+}

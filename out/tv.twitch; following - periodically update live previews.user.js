@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name        tv.twitch; periodically update live previews
-// @match       https://www.twitch.tv/*
-// @version     1.0.1
+// @name        tv.twitch; following - periodically update live previews
+// @include     /^https:\/\/www\.twitch\.tv\/directory\/following\/?.*$/
+// @version     1.0.2
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none
@@ -108,7 +108,7 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
-// src/tv.twitch; periodically update live previews.user.ts
+// src/tv.twitch; following - periodically update live previews.user.ts
 var update_interval = 5 * 1000;
 var thumbnail_set = new Set();
 var resolution_regex = /320x180|440x248/;

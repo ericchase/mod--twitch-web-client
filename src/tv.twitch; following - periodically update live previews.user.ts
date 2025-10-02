@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name        tv.twitch; periodically update live previews
-// @match       https://www.twitch.tv/*
-// @version     1.0.1
+// @name        tv.twitch; following - periodically update live previews
+// @include     /^https:\/\/www\.twitch\.tv\/directory\/following\/?.*$/
+// @version     1.0.2
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none

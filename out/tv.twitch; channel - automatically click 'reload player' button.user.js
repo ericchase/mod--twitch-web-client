@@ -1,47 +1,16 @@
 // ==UserScript==
-// @name        tv.twitch; automatically enter theatre mode
-// @match       https://www.twitch.tv/*
-// @version     1.0.0
-// @description 2025/09/23
+// @name        tv.twitch; channel - automatically click 'reload player' button
+// @include     /^https:\/\/www\.twitch\.tv\/(?!directory).+$/
+// @version     1.0.1
+// @description 2025/09/22
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/browseruserscripts
 // ==/UserScript==
 
-// src/lib/ericchase/WebPlatform_DOM_Attribute_Observer_Class.ts
-class Class_WebPlatform_DOM_Attribute_Observer_Class {
-  constructor(config) {
-    config.options ??= {};
-    this.mutationObserver = new MutationObserver((mutationRecords) => {
-      for (const record of mutationRecords) {
-        this.send(record);
-      }
-    });
-    this.mutationObserver.observe(config.source ?? document.documentElement, {
-      attributes: true,
-      attributeFilter: config.options.attributeFilter,
-      attributeOldValue: config.options.attributeOldValue ?? true,
-      subtree: config.options.subtree ?? true,
-    });
-  }
-  subscribe(callback) {
-    this.subscriptionSet.add(callback);
-    return () => {
-      this.subscriptionSet.delete(callback);
-    };
-  }
-  mutationObserver;
-  subscriptionSet = new Set();
-  send(record) {
-    for (const callback of this.subscriptionSet) {
-      callback(record, () => {
-        this.subscriptionSet.delete(callback);
-      });
-    }
-  }
-}
-function WebPlatform_DOM_Attribute_Observer_Class(config) {
-  return new Class_WebPlatform_DOM_Attribute_Observer_Class(config);
+// src/lib/ericchase/Core_Console_Error.ts
+function Core_Console_Error(...items) {
+  console['error'](...items);
 }
 
 // src/lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.ts
@@ -144,22 +113,13 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
-// src/tv.twitch; automatically enter theatre mode.user.ts
+// src/tv.twitch; channel - automatically click 'reload player' button.user.ts
 var observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
-  selector: 'button[aria-label="Theatre Mode (alt+t)"]',
+  selector: 'button',
 });
 observer1.subscribe((element1) => {
-  observer1.disconnect();
-  element1.click();
-  const observer2 = WebPlatform_DOM_Attribute_Observer_Class({
-    options: {
-      attributeFilter: ['aria-label'],
-    },
-    source: element1,
-  });
-  observer2.subscribe(() => {
-    if (element1.getAttribute('aria-label') === 'Theatre Mode (alt+t)') {
-      element1.click();
-    }
-  });
+  if (element1.textContent === 'Click Here to Reload Player') {
+    Core_Console_Error('Player crashed. Reloading.');
+    window.location.reload();
+  }
 });

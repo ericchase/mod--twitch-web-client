@@ -1,10 +1,10 @@
 /* ==UserStyle==
-@name        tv.twitch; hide device or settings issue notice
+@name        tv.twitch; channel - hide quality settings 'device or settings issue' notice
 @version     1.0.1
 @description 2025/08/17, 4:29:08 PM
 @namespace   https://github.com/ericchase/browseruserstyles
 ==/UserStyle== */
-@-moz-document domain("twitch.tv") {
+@-moz-document regexp("^https:\\/\\/www\\.twitch\\.tv\\/(?!directory).+$") {
   div[data-a-target='player-settings-menu'] {
     > div:has(div[role='alert']) {
       display: none;

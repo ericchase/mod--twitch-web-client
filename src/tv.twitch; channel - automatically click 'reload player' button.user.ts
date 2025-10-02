@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name        tv.twitch; automatically click reload player button
-// @match       https://www.twitch.tv/*
-// @version     1.0.0
+// @name        tv.twitch; channel - automatically click 'reload player' button
+// @include     /^https:\/\/www\.twitch\.tv\/(?!directory).+$/
+// @version     1.0.1
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none

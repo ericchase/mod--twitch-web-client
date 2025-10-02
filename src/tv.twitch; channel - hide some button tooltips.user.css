@@ -1,0 +1,12 @@
+/* ==UserStyle==
+@name        tv.twitch; channel - hide some button tooltips
+@version     1.0.1
+@description 2025/07/12
+@namespace   https://github.com/ericchase/browseruserstyles
+==/UserStyle== */
+@-moz-document regexp("^https:\\/\\/www\\.twitch\\.tv\\/(?!directory).+$") {
+  .tw-tooltip-popper-arrow,
+  .tw-tooltip-wrapper {
+    display: none;
+  }
+}

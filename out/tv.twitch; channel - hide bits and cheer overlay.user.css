@@ -1,10 +1,10 @@
 /* ==UserStyle==
-@name        tv.twitch; hide bits,cheer overlay
-@version     1.0.2
-@description 2025/06/18, 10:43:32 PM
+@name        tv.twitch; channel - hide bits and cheer overlay
+@version     1.0.3
+@description 2025/06/18
 @namespace   https://github.com/ericchase/browseruserstyles
 ==/UserStyle== */
-@-moz-document domain("twitch.tv") {
+@-moz-document regexp("^https:\\/\\/www\\.twitch\\.tv\\/(?!directory).+$") {
   /* bits player overlay (aka [class*="oneTapStoreMenu"]) */
   div:has(> div > div#one-tap-store-id) {
     display: none !important;

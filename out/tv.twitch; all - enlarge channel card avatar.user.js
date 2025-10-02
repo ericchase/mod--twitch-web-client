@@ -1,17 +1,12 @@
 // ==UserScript==
-// @name        tv.twitch; automatically click reload player button
-// @match       https://www.twitch.tv/*
+// @name        tv.twitch; all - enlarge channel card avatar
+// @include     /^https:\/\/www\.twitch\.tv\/?.*$/
 // @version     1.0.0
-// @description 2025/09/22
+// @description 2025/10/01
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/browseruserscripts
 // ==/UserScript==
-
-// src/lib/ericchase/Core_Console_Error.ts
-function Core_Console_Error(...items) {
-  console['error'](...items);
-}
 
 // src/lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.ts
 class Class_WebPlatform_DOM_Element_Added_Observer_Class {
@@ -113,13 +108,25 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
-// src/tv.twitch; automatically click reload player button.user.ts
+// src/tv.twitch; all - enlarge channel card avatar.user.ts
+var resolution_regex = /50x50/;
+var desired_resolution = '150x150';
 var observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
-  selector: 'button',
+  selector: 'div[class*="ScImageWrapper"]:has(img.tw-image-avatar)',
 });
 observer1.subscribe((element1) => {
-  if (element1.textContent === 'Click Here to Reload Player') {
-    Core_Console_Error('Player crashed. Reloading.');
-    window.location.reload();
-  }
+  const observer2 = WebPlatform_DOM_Element_Added_Observer_Class({
+    selector: 'img.tw-image-avatar',
+    source: element1,
+  });
+  observer2.subscribe((element2) => {
+    updateThumbnailSrc(element2);
+  });
 });
+function updateThumbnailSrc(thumbnail) {
+  const src = thumbnail.getAttribute('src');
+  if (src) {
+    const src_url = new URL(src.replace(resolution_regex, desired_resolution));
+    thumbnail.setAttribute('src', src_url.toString());
+  }
+}

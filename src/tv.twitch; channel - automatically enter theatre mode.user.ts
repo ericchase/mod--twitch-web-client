@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name        tv.twitch; automatically enter theatre mode
-// @match       https://www.twitch.tv/*
-// @version     1.0.0
+// @name        tv.twitch; channel - automatically enter theatre mode
+// @include     /^https:\/\/www\.twitch\.tv\/(?!directory).+$/
+// @version     1.0.1
 // @description 2025/09/23
 // @run-at      document-start
 // @grant       none
