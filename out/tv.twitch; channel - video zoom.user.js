@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        tv.twitch; channel - video zoom
 // @match       *://www.twitch.tv/*
-// @version     1.0.0
+// @version     1.0.1
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
-// @homepageURL https://github.com/ericchase/browseruserscripts
+// @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
 // src/lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.ts

@@ -1,8 +1,8 @@
 /* ==UserStyle==
 @name        tv.twitch; channel - hide sticky footer
-@version     1.0.1
+@version     1.0.2
 @description 2025/08/30
-@namespace   https://github.com/ericchase/browseruserstyles
+@namespace   https://github.com/ericchase/mod--twitch-web-client
 ==/UserStyle== */
 @-moz-document regexp("^https:\\/\\/www\\.twitch\\.tv\\/(?!directory).+$") {
   footer#twilight-sticky-footer-root {

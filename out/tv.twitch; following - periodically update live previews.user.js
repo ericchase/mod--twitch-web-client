@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        tv.twitch; following - periodically update live previews
 // @include     /^https:\/\/www\.twitch\.tv\/directory\/following\/?.*$/
-// @version     1.0.2
+// @version     1.0.3
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none
-// @homepageURL https://github.com/ericchase/browseruserscripts
+// @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
 // src/lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.ts

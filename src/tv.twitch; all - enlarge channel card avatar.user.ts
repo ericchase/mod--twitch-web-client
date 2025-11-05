@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        tv.twitch; all - enlarge channel card avatar
 // @include     /^https:\/\/www\.twitch\.tv\/?.*$/
-// @version     1.0.0
+// @version     1.0.1
 // @description 2025/10/01
 // @run-at      document-start
 // @grant       none
-// @homepageURL https://github.com/ericchase/browseruserscripts
+// @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
 import { WebPlatform_DOM_Element_Added_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.js';

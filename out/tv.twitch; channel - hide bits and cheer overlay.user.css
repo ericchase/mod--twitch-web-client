@@ -1,8 +1,8 @@
 /* ==UserStyle==
 @name        tv.twitch; channel - hide bits and cheer overlay
-@version     1.0.3
+@version     1.0.4
 @description 2025/06/18
-@namespace   https://github.com/ericchase/browseruserstyles
+@namespace   https://github.com/ericchase/mod--twitch-web-client
 ==/UserStyle== */
 @-moz-document regexp("^https:\\/\\/www\\.twitch\\.tv\\/(?!directory).+$") {
   /* bits player overlay (aka [class*="oneTapStoreMenu"]) */

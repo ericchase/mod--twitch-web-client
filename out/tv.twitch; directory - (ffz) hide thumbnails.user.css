@@ -1,8 +1,8 @@
 /* ==UserStyle==
 @name        tv.twitch; directory - (ffz) hide thumbnails
-@version     1.0.1
+@version     1.0.2
 @description 2022/08/13
-@namespace   https://github.com/ericchase/browseruserstyles
+@namespace   https://github.com/ericchase/mod--twitch-web-client
 ==/UserStyle== */
 @-moz-document regexp("^https:\\/\\/www\\.twitch\\.tv\\/directory\\/.+$") {
   .ffz-hide-thumbnail:not(#_) a[data-a-target='preview-card-image-link'] {

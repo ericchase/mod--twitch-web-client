@@ -5,7 +5,7 @@
 // @description 2023/01/02
 // @run-at      document-start
 // @grant       none
-// @homepageURL https://github.com/ericchase/browseruserscripts
+// @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
 const settings = {

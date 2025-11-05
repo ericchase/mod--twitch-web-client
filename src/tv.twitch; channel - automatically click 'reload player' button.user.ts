@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        tv.twitch; channel - automatically click 'reload player' button
 // @match       *://www.twitch.tv/*
-// @version     1.0.1
+// @version     1.1.0
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none
-// @homepageURL https://github.com/ericchase/browseruserscripts
+// @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
 import { Core_Console_Error } from './lib/ericchase/Core_Console_Error.js';

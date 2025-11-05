@@ -1,8 +1,8 @@
 /* ==UserStyle==
 @name        tv.twitch; following - hide following header
-@version     1.0.0
+@version     1.0.1
 @description 2025/09/06
-@namespace   https://github.com/ericchase/browseruserstyles
+@namespace   https://github.com/ericchase/mod--twitch-web-client
 ==/UserStyle== */
 @-moz-document regexp("^https:\\/\\/www\\.twitch\\.tv\\/directory\\/following\\/?.*$") {
   div:has(> h1[class^='CoreText']) {

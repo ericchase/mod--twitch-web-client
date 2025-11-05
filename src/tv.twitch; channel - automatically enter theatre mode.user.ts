@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        tv.twitch; channel - automatically enter theatre mode
 // @match       *://www.twitch.tv/*
-// @version     1.0.1
+// @version     1.1.0
 // @description 2025/09/23
 // @run-at      document-start
 // @grant       none
-// @homepageURL https://github.com/ericchase/browseruserscripts
+// @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
 import { Class_WebPlatform_DOM_Attribute_Observer_Class, WebPlatform_DOM_Attribute_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Attribute_Observer_Class.js';

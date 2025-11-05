@@ -2,7 +2,7 @@
 @name        tv.twitch.m; hide ads
 @version     1.0.0
 @description 2023/04/16, 5:08 PM
-@namespace   https://github.com/ericchase/browseruserstyles
+@namespace   https://github.com/ericchase/mod--twitch-web-client
 ==/UserStyle== */
 @-moz-document url-prefix("https://www.twitch.tv")
 {
