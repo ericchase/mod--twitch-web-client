@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        tv.twitch; channel - automatically enter theatre mode
-// @include     /^https:\/\/www\.twitch\.tv\/(?!directory).+$/
+// @match       *://www.twitch.tv/*
 // @version     1.0.1
 // @description 2025/09/23
 // @run-at      document-start
@@ -8,24 +8,44 @@
 // @homepageURL https://github.com/ericchase/browseruserscripts
 // ==/UserScript==
 
-import { WebPlatform_DOM_Attribute_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Attribute_Observer_Class.js';
-import { WebPlatform_DOM_Element_Added_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.js';
+import { Class_WebPlatform_DOM_Attribute_Observer_Class, WebPlatform_DOM_Attribute_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Attribute_Observer_Class.js';
+import { Class_WebPlatform_DOM_Element_Added_Observer_Class, WebPlatform_DOM_Element_Added_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.js';
+import { SubscribeToUrlChange } from './lib/HistoryObserver.js';
+import { InitModuleSetupHandler, ModuleInterface } from './lib/UserScriptModule.js';
 
-const observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
-  selector: 'button[aria-label="Theatre Mode (alt+t)"]',
-});
-observer1.subscribe((element1) => {
-  observer1.disconnect();
-  (element1 as HTMLButtonElement).click();
-  const observer2 = WebPlatform_DOM_Attribute_Observer_Class({
-    options: {
-      attributeFilter: ['aria-label'],
-    },
-    source: element1,
-  });
-  observer2.subscribe(() => {
-    if (element1.getAttribute('aria-label') === 'Theatre Mode (alt+t)') {
-      (element1 as HTMLButtonElement).click();
-    }
-  });
-});
+// TODO: when theatre mode button is clicked, allow exit
+
+class Module implements ModuleInterface {
+  observer1?: Class_WebPlatform_DOM_Element_Added_Observer_Class;
+  observer2?: Class_WebPlatform_DOM_Attribute_Observer_Class;
+  setup() {
+    console.log('setup theatre mode');
+    this.observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
+      selector: 'button[aria-label="Theatre Mode (alt+t)"]',
+    });
+    this.observer1.subscribe((element1) => {
+      if (element1 instanceof HTMLButtonElement) {
+        this.observer1?.disconnect();
+        element1.click();
+        this.observer2 = WebPlatform_DOM_Attribute_Observer_Class({
+          options: {
+            attributeFilter: ['aria-label'],
+          },
+          source: element1,
+        });
+        this.observer2.subscribe(() => {
+          if (element1.getAttribute('aria-label') === 'Theatre Mode (alt+t)') {
+            element1.click();
+          }
+        });
+      }
+    });
+  }
+  cleanup() {
+    console.log('cleanup theatre mode');
+    this.observer1?.disconnect();
+    this.observer2?.disconnect();
+  }
+}
+
+SubscribeToUrlChange(InitModuleSetupHandler(Module));

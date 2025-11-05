@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
-// @include     /^https:\/\/www\.twitch\.tv\/(?!directory).+$/
-// @version     1.0.0
+// @match       *://www.twitch.tv/*
+// @version     1.0.1
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -108,41 +108,170 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
+// src/lib/HistoryObserver.ts
+function SubscribeToUrlChange(callback) {
+  if (window.history.isObserverSetUp !== true) {
+    console.log('setup history observer');
+    window.history.isObserverSetUp = true;
+    window.history.onUrlChangeSubscriptions = new Set();
+    window.history.originalPushState = window.history.pushState;
+    window.history.originalReplaceState = window.history.replaceState;
+    window.history.pushState = function (...args) {
+      window.history.originalPushState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+    window.history.replaceState = function (...args) {
+      window.history.originalReplaceState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+  }
+  window.history.onUrlChangeSubscriptions.add(callback);
+}
+
+// src/lib/ericchase/Core_Promise_Deferred_Class.ts
+class Class_Core_Promise_Deferred_Class {
+  promise;
+  reject;
+  resolve;
+  constructor() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
+    });
+    if (this.resolve === undefined || this.reject === undefined) {
+      throw new Error(`${Class_Core_Promise_Deferred_Class.name}'s constructor failed to setup promise functions.`);
+    }
+  }
+}
+function Core_Promise_Deferred_Class() {
+  return new Class_Core_Promise_Deferred_Class();
+}
+
+// src/lib/ericchase/Core_Promise_Orphan.ts
+function Core_Promise_Orphan(promise) {}
+
+// src/lib/ericchase/Core_Utility_Debounce.ts
+function Core_Utility_Debounce(fn, delay_ms) {
+  let deferred = Core_Promise_Deferred_Class();
+  let timeout = undefined;
+  async function async_callback(...args) {
+    try {
+      await fn(...args);
+      deferred.resolve();
+    } catch (error) {
+      deferred.reject(error);
+    } finally {
+      deferred = Core_Promise_Deferred_Class();
+    }
+  }
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      Core_Promise_Orphan(async_callback(...args));
+    }, delay_ms);
+    return deferred.promise;
+  };
+}
+
+// src/lib/UserScriptModule.ts
+function InitModuleSetupHandler(constructor) {
+  let module_instance = undefined;
+  const debouncedSetup = Core_Utility_Debounce(() => {
+    if (window.location.pathname.startsWith('/directory') !== true) {
+      module_instance = new constructor();
+      module_instance.setup();
+    }
+  }, 2500);
+  debouncedSetup();
+  return function () {
+    module_instance?.cleanup();
+    module_instance = undefined;
+    debouncedSetup();
+  };
+}
+
 // src/tv.twitch; channel - mute ads.user.ts
-var main_video = undefined;
-var observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
-  selector: 'video',
-});
-observer1.subscribe((element1) => {
-  if (element1.matches('main video')) {
-    main_video = element1;
+class Module {
+  main_video;
+  secondary_video;
+  timer;
+  watchAdElement(element) {
+    if (element.isConnected) {
+      this.muteMainVideo();
+      this.maximizeSecondaryVideo();
+      this.timer = setTimeout(() => {
+        this.watchAdElement(element);
+      }, 1000);
+    } else {
+      this.unmuteMainVideo();
+      this.restoreSecondaryVideo();
+    }
   }
-});
-var observer2 = WebPlatform_DOM_Element_Added_Observer_Class({
-  selector: '[data-a-target="video-ad-label"]',
-});
-observer2.subscribe((element1) => {
-  MuteMainVideo();
-  WatchForRemoval(element1);
-});
-function WatchForRemoval(element) {
-  if (element.isConnected) {
-    setTimeout(() => {
-      WatchForRemoval(element);
-    }, 1000);
-  } else {
-    UnmuteMainVideo();
+  muteMainVideo() {
+    if (this.main_video) {
+      this.main_video.muted = true;
+      this.main_video.style.setProperty('display', 'none');
+    }
+  }
+  unmuteMainVideo() {
+    if (this.main_video) {
+      this.main_video.muted = false;
+      this.main_video.style.removeProperty('display');
+    }
+  }
+  maximizeSecondaryVideo() {
+    if (this.main_video && this.secondary_video) {
+      const { width, height, top, left } = this.main_video.getBoundingClientRect();
+      this.secondary_video.style.setProperty('width', width + 'px');
+      this.secondary_video.style.setProperty('height', height + 'px');
+      this.secondary_video.style.setProperty('top', top + '');
+      this.secondary_video.style.setProperty('left', left + '');
+      this.secondary_video.style.setProperty('position', 'fixed');
+      this.secondary_video.style.setProperty('z-index', '99999');
+    }
+  }
+  restoreSecondaryVideo() {
+    if (this.secondary_video) {
+      this.secondary_video.style.removeProperty('width');
+      this.secondary_video.style.removeProperty('height');
+      this.secondary_video.style.removeProperty('top');
+      this.secondary_video.style.removeProperty('left');
+      this.secondary_video.style.removeProperty('position');
+      this.secondary_video.style.removeProperty('z-index');
+    }
+  }
+  observer1;
+  observer2;
+  setup() {
+    console.log('setup mute ads');
+    this.observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
+      selector: 'video',
+    });
+    this.observer1.subscribe((element1) => {
+      if (element1.matches('main video')) {
+        this.main_video = element1;
+      } else {
+        this.secondary_video = element1;
+      }
+    });
+    this.observer2 = WebPlatform_DOM_Element_Added_Observer_Class({
+      selector: '[data-a-target="video-ad-label"]',
+    });
+    this.observer2.subscribe((element1) => {
+      this.watchAdElement(element1);
+    });
+  }
+  cleanup() {
+    console.log('cleanup mute ads');
+    clearTimeout(this.timer);
+    this.observer1?.disconnect();
+    this.observer2?.disconnect();
+    this.unmuteMainVideo();
+    this.restoreSecondaryVideo();
   }
 }
-function MuteMainVideo() {
-  if (main_video) {
-    main_video.muted = true;
-    main_video.style.setProperty('display', 'none');
-  }
-}
-function UnmuteMainVideo() {
-  if (main_video) {
-    main_video.muted = false;
-    main_video.style.removeProperty('display');
-  }
-}
+SubscribeToUrlChange(InitModuleSetupHandler(Module));

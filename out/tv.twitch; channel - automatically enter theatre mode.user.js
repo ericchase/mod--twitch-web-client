@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        tv.twitch; channel - automatically enter theatre mode
-// @include     /^https:\/\/www\.twitch\.tv\/(?!directory).+$/
+// @match       *://www.twitch.tv/*
 // @version     1.0.1
 // @description 2025/09/23
 // @run-at      document-start
@@ -10,32 +10,38 @@
 
 // src/lib/ericchase/WebPlatform_DOM_Attribute_Observer_Class.ts
 class Class_WebPlatform_DOM_Attribute_Observer_Class {
+  $mutation_observer;
+  $subscription_set = new Set();
   constructor(config) {
     config.options ??= {};
-    this.mutationObserver = new MutationObserver((mutationRecords) => {
+    this.$mutation_observer = new MutationObserver((mutationRecords) => {
       for (const record of mutationRecords) {
-        this.send(record);
+        this.$send(record);
       }
     });
-    this.mutationObserver.observe(config.source ?? document.documentElement, {
+    this.$mutation_observer.observe(config.source ?? document.documentElement, {
       attributes: true,
       attributeFilter: config.options.attributeFilter,
       attributeOldValue: config.options.attributeOldValue ?? true,
       subtree: config.options.subtree ?? true,
     });
   }
+  disconnect() {
+    this.$mutation_observer.disconnect();
+    for (const callback of this.$subscription_set) {
+      this.$subscription_set.delete(callback);
+    }
+  }
   subscribe(callback) {
-    this.subscriptionSet.add(callback);
+    this.$subscription_set.add(callback);
     return () => {
-      this.subscriptionSet.delete(callback);
+      this.$subscription_set.delete(callback);
     };
   }
-  mutationObserver;
-  subscriptionSet = new Set();
-  send(record) {
-    for (const callback of this.subscriptionSet) {
+  $send(record) {
+    for (const callback of this.$subscription_set) {
       callback(record, () => {
-        this.subscriptionSet.delete(callback);
+        this.$subscription_set.delete(callback);
       });
     }
   }
@@ -144,22 +150,123 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
-// src/tv.twitch; channel - automatically enter theatre mode.user.ts
-var observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
-  selector: 'button[aria-label="Theatre Mode (alt+t)"]',
-});
-observer1.subscribe((element1) => {
-  observer1.disconnect();
-  element1.click();
-  const observer2 = WebPlatform_DOM_Attribute_Observer_Class({
-    options: {
-      attributeFilter: ['aria-label'],
-    },
-    source: element1,
-  });
-  observer2.subscribe(() => {
-    if (element1.getAttribute('aria-label') === 'Theatre Mode (alt+t)') {
-      element1.click();
+// src/lib/HistoryObserver.ts
+function SubscribeToUrlChange(callback) {
+  if (window.history.isObserverSetUp !== true) {
+    console.log('setup history observer');
+    window.history.isObserverSetUp = true;
+    window.history.onUrlChangeSubscriptions = new Set();
+    window.history.originalPushState = window.history.pushState;
+    window.history.originalReplaceState = window.history.replaceState;
+    window.history.pushState = function (...args) {
+      window.history.originalPushState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+    window.history.replaceState = function (...args) {
+      window.history.originalReplaceState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+  }
+  window.history.onUrlChangeSubscriptions.add(callback);
+}
+
+// src/lib/ericchase/Core_Promise_Deferred_Class.ts
+class Class_Core_Promise_Deferred_Class {
+  promise;
+  reject;
+  resolve;
+  constructor() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
+    });
+    if (this.resolve === undefined || this.reject === undefined) {
+      throw new Error(`${Class_Core_Promise_Deferred_Class.name}'s constructor failed to setup promise functions.`);
     }
-  });
-});
+  }
+}
+function Core_Promise_Deferred_Class() {
+  return new Class_Core_Promise_Deferred_Class();
+}
+
+// src/lib/ericchase/Core_Promise_Orphan.ts
+function Core_Promise_Orphan(promise) {}
+
+// src/lib/ericchase/Core_Utility_Debounce.ts
+function Core_Utility_Debounce(fn, delay_ms) {
+  let deferred = Core_Promise_Deferred_Class();
+  let timeout = undefined;
+  async function async_callback(...args) {
+    try {
+      await fn(...args);
+      deferred.resolve();
+    } catch (error) {
+      deferred.reject(error);
+    } finally {
+      deferred = Core_Promise_Deferred_Class();
+    }
+  }
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      Core_Promise_Orphan(async_callback(...args));
+    }, delay_ms);
+    return deferred.promise;
+  };
+}
+
+// src/lib/UserScriptModule.ts
+function InitModuleSetupHandler(constructor) {
+  let module_instance = undefined;
+  const debouncedSetup = Core_Utility_Debounce(() => {
+    if (window.location.pathname.startsWith('/directory') !== true) {
+      module_instance = new constructor();
+      module_instance.setup();
+    }
+  }, 2500);
+  debouncedSetup();
+  return function () {
+    module_instance?.cleanup();
+    module_instance = undefined;
+    debouncedSetup();
+  };
+}
+
+// src/tv.twitch; channel - automatically enter theatre mode.user.ts
+class Module {
+  observer1;
+  observer2;
+  setup() {
+    console.log('setup theatre mode');
+    this.observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
+      selector: 'button[aria-label="Theatre Mode (alt+t)"]',
+    });
+    this.observer1.subscribe((element1) => {
+      if (element1 instanceof HTMLButtonElement) {
+        this.observer1?.disconnect();
+        element1.click();
+        this.observer2 = WebPlatform_DOM_Attribute_Observer_Class({
+          options: {
+            attributeFilter: ['aria-label'],
+          },
+          source: element1,
+        });
+        this.observer2.subscribe(() => {
+          if (element1.getAttribute('aria-label') === 'Theatre Mode (alt+t)') {
+            element1.click();
+          }
+        });
+      }
+    });
+  }
+  cleanup() {
+    console.log('cleanup theatre mode');
+    this.observer1?.disconnect();
+    this.observer2?.disconnect();
+  }
+}
+SubscribeToUrlChange(InitModuleSetupHandler(Module));
