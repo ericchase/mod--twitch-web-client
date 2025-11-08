@@ -1,12 +1,17 @@
 // ==UserScript==
 // @name        tv.twitch; channel - automatically enter theatre mode
 // @match       *://www.twitch.tv/*
-// @version     1.1.0
+// @version     1.1.1
 // @description 2025/09/23
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
+
+// src/lib/ericchase/Core_Console_Log.ts
+function Core_Console_Log(...items) {
+  console['log'](...items);
+}
 
 // src/lib/ericchase/WebPlatform_DOM_Attribute_Observer_Class.ts
 class Class_WebPlatform_DOM_Attribute_Observer_Class {
@@ -151,9 +156,10 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
 }
 
 // src/lib/HistoryObserver.ts
+var MODNAME = 'History Observer';
 function SubscribeToUrlChange(callback) {
   if (window.history.isObserverSetUp !== true) {
-    console.log('setup history observer');
+    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME}`);
     window.history.isObserverSetUp = true;
     window.history.onUrlChangeSubscriptions = new Set();
     window.history.originalPushState = window.history.pushState;
@@ -237,18 +243,20 @@ function InitModuleSetupHandler(constructor) {
 }
 
 // src/tv.twitch; channel - automatically enter theatre mode.user.ts
+var MODNAME2 = 'Enter Theatre Mode';
+
 class Module {
   observer1;
   observer2;
   setup() {
-    console.log('setup theatre mode');
+    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME2}`);
     this.observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
       selector: 'button[aria-label="Theatre Mode (alt+t)"]',
     });
     this.observer1.subscribe((element1) => {
       if (element1 instanceof HTMLButtonElement) {
         this.observer1?.disconnect();
-        element1.click();
+        this.automatedClick(element1);
         this.observer2 = WebPlatform_DOM_Attribute_Observer_Class({
           options: {
             attributeFilter: ['aria-label'],
@@ -257,16 +265,26 @@ class Module {
         });
         this.observer2.subscribe(() => {
           if (element1.getAttribute('aria-label') === 'Theatre Mode (alt+t)') {
-            element1.click();
+            Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Enter Theatre Mode.`);
+            this.automatedClick(element1);
           }
         });
       }
     });
   }
   cleanup() {
-    console.log('cleanup theatre mode');
+    Core_Console_Log(`[Twitch Mod]: Clean Up: ${MODNAME2}`);
     this.observer1?.disconnect();
     this.observer2?.disconnect();
+  }
+  automatedClick(button) {
+    button.removeEventListener('click', this.manualClick);
+    button.click();
+    button.addEventListener('click', this.manualClick);
+  }
+  manualClick() {
+    Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Switching To User Control.`);
+    this.cleanup();
   }
 }
 SubscribeToUrlChange(InitModuleSetupHandler(Module));

@@ -1,14 +1,14 @@
 // ==UserScript==
-// @name        tv.twitch; channel - automatically click 'reload player' button
+// @name        tv.twitch; channel - automatically click 'return to stream' button
 // @match       *://www.twitch.tv/*
-// @version     1.1.1
-// @description 2025/09/22
+// @version     1.0.0
+// @description 2025/11/07
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
-const MODNAME = 'Reload Player';
+const MODNAME = 'Return To Stream';
 
 import { Core_Console_Log } from './lib/ericchase/Core_Console_Log.js';
 import { Class_WebPlatform_DOM_Element_Added_Observer_Class, WebPlatform_DOM_Element_Added_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.js';
@@ -23,9 +23,11 @@ class Module implements ModuleInterface {
       selector: 'button',
     });
     this.observer1.subscribe((element1) => {
-      if (element1.textContent === 'Click Here to Reload Player') {
-        Core_Console_Log(`[Twitch Mod] ${MODNAME}: Player Crashed. Reloading.`);
-        window.location.reload();
+      if (element1 instanceof HTMLButtonElement) {
+        if (element1.textContent === 'Return to stream') {
+          Core_Console_Log(`[Twitch Mod] ${MODNAME}: Returning.`);
+          element1.click();
+        }
       }
     });
   }

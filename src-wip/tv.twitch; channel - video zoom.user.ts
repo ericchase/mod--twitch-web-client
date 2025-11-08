@@ -8,107 +8,8 @@
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
-// src/lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.ts
-class Class_WebPlatform_DOM_Element_Added_Observer_Class {
-  config;
-  $match_set = new Set();
-  $mutation_observer;
-  $subscription_set = new Set();
-  constructor(config) {
-    this.config = {
-      include_existing_elements: config.include_existing_elements ?? true,
-      options: {
-        subtree: config.options?.subtree ?? true,
-      },
-      selector: config.selector,
-      source: config.source ?? document.documentElement,
-    };
-    this.$mutation_observer = new MutationObserver((mutationRecords) => {
-      const sent_set = new Set();
-      for (const record of mutationRecords) {
-        for (const node of record.addedNodes) {
-          const tree_walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
-          const processCurrentNode = () => {
-            if (sent_set.has(tree_walker.currentNode) === false) {
-              if (tree_walker.currentNode instanceof Element && tree_walker.currentNode.matches(this.config.selector) === true) {
-                this.$send(tree_walker.currentNode);
-                sent_set.add(tree_walker.currentNode);
-              }
-            }
-          };
-          processCurrentNode();
-          if (this.config.options.subtree === true) {
-            while (tree_walker.nextNode()) {
-              processCurrentNode();
-            }
-          }
-        }
-      }
-    });
-    this.$mutation_observer.observe(this.config.source, {
-      childList: true,
-      subtree: this.config.options.subtree,
-    });
-    if (this.config.include_existing_elements === true) {
-      if (this.config.options.subtree === true) {
-        const sent_set = new Set();
-        const tree_walker = document.createTreeWalker(this.config.source, NodeFilter.SHOW_ELEMENT);
-        const processCurrentNode = () => {
-          if (sent_set.has(tree_walker.currentNode) === false) {
-            if (tree_walker.currentNode instanceof Element && tree_walker.currentNode.matches(this.config.selector) === true) {
-              this.$send(tree_walker.currentNode);
-              sent_set.add(tree_walker.currentNode);
-            }
-          }
-        };
-        while (tree_walker.nextNode()) {
-          processCurrentNode();
-        }
-      } else {
-        for (const child of this.config.source.childNodes) {
-          if (child instanceof Element && child.matches(this.config.selector) === true) {
-            this.$send(child);
-          }
-        }
-      }
-    }
-  }
-  disconnect() {
-    this.$mutation_observer.disconnect();
-    for (const callback of this.$subscription_set) {
-      this.$subscription_set.delete(callback);
-    }
-  }
-  subscribe(callback) {
-    this.$subscription_set.add(callback);
-    let abort = false;
-    for (const element of this.$match_set) {
-      callback(element, () => {
-        this.$subscription_set.delete(callback);
-        abort = true;
-      });
-      if (abort) {
-        return () => {};
-      }
-    }
-    return () => {
-      this.$subscription_set.delete(callback);
-    };
-  }
-  $send(element) {
-    this.$match_set.add(element);
-    for (const callback of this.$subscription_set) {
-      callback(element, () => {
-        this.$subscription_set.delete(callback);
-      });
-    }
-  }
-}
-function WebPlatform_DOM_Element_Added_Observer_Class(config) {
-  return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
-}
+import { WebPlatform_DOM_Element_Added_Observer_Class } from '../src/lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.js';
 
-// src/tv.twitch; channel - video zoom.user.ts
 class Rect {
   x = 0;
   y = 0;
@@ -119,11 +20,16 @@ class Rect {
   bottom = 0;
   left = 0;
 }
-
 class Region {
-  element;
-  startPoint;
-  endPoint;
+  element: HTMLElement;
+  startPoint: {
+    x: number;
+    y: number;
+  };
+  endPoint: {
+    x: number;
+    y: number;
+  };
   constructor() {
     this.element = document.createElement('div');
     this.element.style.position = 'absolute';
@@ -134,14 +40,14 @@ class Region {
     this.endPoint = { x: 0, y: 0 };
     this.hide();
   }
-  attach(sibling) {
+  attach(sibling: HTMLElement) {
     sibling.insertAdjacentElement('afterend', this.element);
   }
-  setStart(x, y) {
+  setStart(x: number, y: number) {
     this.startPoint.x = x;
     this.startPoint.y = y;
   }
-  setEnd(x, y) {
+  setEnd(x: number, y: number) {
     this.endPoint.x = x;
     this.endPoint.y = y;
   }
@@ -189,21 +95,20 @@ class Region {
     this.hide();
   }
 }
-
 class VideoHandler {
-  element;
-  region;
-  zoomScale;
-  zoomX;
-  zoomY;
-  constructor(element) {
+  element: HTMLElement;
+  region: Region;
+  zoomScale: number;
+  zoomX: number;
+  zoomY: number;
+  constructor(element: HTMLElement) {
     this.element = element;
     this.region = new Region();
     this.zoomScale = 1;
     this.zoomX = 0;
     this.zoomY = 0;
   }
-  isClickedInside(event) {
+  isClickedInside(event: MouseEvent) {
     if (this.element && this.element.offsetParent) {
       const { x, y } = this.element.offsetParent.getBoundingClientRect();
       const left = x + this.element.offsetLeft;
@@ -220,7 +125,7 @@ class VideoHandler {
     }
     return new Rect();
   }
-  getRelativeCoords(x, y) {
+  getRelativeCoords(x: number, y: number) {
     if (this.element) {
       return {
         x: x - this.getBoundingClientRect().left + this.element.offsetLeft,
@@ -231,6 +136,7 @@ class VideoHandler {
   }
   reset() {
     this.resetZoom();
+    // GetVideo();
   }
   applyZoom() {
     this.region.hide();
@@ -260,7 +166,7 @@ class VideoHandler {
       this.element.style.translate = `${this.zoomX}px ${this.zoomY}px`;
     }
   }
-  moveZoom(deltaX, deltaY) {
+  moveZoom(deltaX: number, deltaY: number) {
     if (this.element) {
       this.zoomX += deltaX;
       this.zoomY += deltaY;
@@ -279,7 +185,7 @@ class VideoHandler {
     return this.zoomScale !== 1;
   }
 }
-var mouseHandlers = {
+const mouseHandlers = {
   HandleMouse_Begin: Toggler(
     () => {
       window.addEventListener('mousedown', HandleMouse_Begin);
@@ -313,15 +219,16 @@ var mouseHandlers = {
     () => window.removeEventListener('contextmenu', HandleMouse_ResetZoom, true),
   ),
 };
-function ConsumeEvent(event) {
+
+function ConsumeEvent(event: Event) {
   event.preventDefault();
   event.stopImmediatePropagation();
   event.stopPropagation();
 }
-function IsLeftClick(event) {
+function IsLeftClick(event: MouseEvent) {
   return event.button === 0;
 }
-function Toggler(onEnable, onDisable) {
+function Toggler(onEnable: () => void, onDisable: () => void) {
   let isEnabled = false;
   return (enable = false) => {
     if (isEnabled === enable) return;
@@ -329,10 +236,12 @@ function Toggler(onEnable, onDisable) {
     isEnabled ? onEnable() : onDisable();
   };
 }
-var consumeNextClick = false;
-var oldClientX = 0;
-var oldClientY = 0;
-function HandleMouse_Begin(event) {
+
+let consumeNextClick = false;
+let oldClientX = 0;
+let oldClientY = 0;
+
+function HandleMouse_Begin(event: MouseEvent) {
   if (IsLeftClick(event) && videoHandler.element && videoHandler.isClickedInside(event)) {
     if (event.ctrlKey || event.altKey) {
       ConsumeEvent(event);
@@ -349,7 +258,7 @@ function HandleMouse_Begin(event) {
     }
   }
 }
-function HandleMouse_Move(event) {
+function HandleMouse_Move(event: MouseEvent) {
   if (videoHandler.isZoomed) {
     if (oldClientX !== event.clientX || oldClientY !== event.clientY) {
       consumeNextClick = true;
@@ -363,7 +272,7 @@ function HandleMouse_Move(event) {
     videoHandler.region.drawRegion();
   }
 }
-function HandleMouse_End(event) {
+function HandleMouse_End(event: MouseEvent) {
   mouseHandlers.HandleMouse_End(false);
   mouseHandlers.HandleMouse_Move(false);
   const { width, height } = videoHandler.region.getRect();
@@ -377,7 +286,7 @@ function HandleMouse_End(event) {
   }
   videoHandler.region.reset();
 }
-function HandleClick(event) {
+function HandleClick(event: MouseEvent) {
   if (IsLeftClick(event) && videoHandler.element && videoHandler.isClickedInside(event)) {
     if (consumeNextClick || event.ctrlKey || event.altKey) {
       consumeNextClick = false;
@@ -385,15 +294,17 @@ function HandleClick(event) {
     }
   }
 }
-function HandleMouse_ResetZoom(event) {
+function HandleMouse_ResetZoom(event: MouseEvent) {
   if (videoHandler.isZoomed && videoHandler.isClickedInside(event)) {
     ConsumeEvent(event);
     mouseHandlers.HandleMouse_ResetZoom(false);
     videoHandler.resetZoom();
   }
 }
-var videoHandler;
-var observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
+
+let videoHandler: VideoHandler;
+
+const observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
   selector: 'video',
 });
 observer1.subscribe((element1) => {

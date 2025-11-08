@@ -1,3 +1,5 @@
+import { Core_Console_Log } from './ericchase/Core_Console_Log.js';
+
 declare global {
   interface History {
     isObserverSetUp: boolean;
@@ -7,9 +9,11 @@ declare global {
   }
 }
 
+const MODNAME = 'History Observer';
+
 export function SubscribeToUrlChange(callback: () => void) {
   if (window.history.isObserverSetUp !== true) {
-    console.log('setup history observer');
+    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME}`);
     window.history.isObserverSetUp = true;
     window.history.onUrlChangeSubscriptions = new Set();
     window.history.originalPushState = window.history.pushState;

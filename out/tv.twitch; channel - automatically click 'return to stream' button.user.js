@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name        tv.twitch; channel - mute ads
+// @name        tv.twitch; channel - automatically click 'return to stream' button
 // @match       *://www.twitch.tv/*
-// @version     1.1.1
-// @description 2025/10/09
+// @version     1.0.0
+// @description 2025/11/07
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
@@ -200,93 +200,28 @@ function InitModuleSetupHandler(constructor) {
   };
 }
 
-// src/tv.twitch; channel - mute ads.user.ts
-var MODNAME2 = 'Mute Ads';
+// src/tv.twitch; channel - automatically click 'return to stream' button.user.ts
+var MODNAME2 = 'Return To Stream';
 
 class Module {
-  player_mute_cache = false;
-  primary_video;
-  secondary_video;
-  timer;
-  watchAdElement(element) {
-    if (element.isConnected === false) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Ad Label Disconnected.`);
-      this.restorePrimaryVideo();
-    } else {
-      this.timer = setTimeout(() => {
-        this.watchAdElement(element);
-      }, 250);
-    }
-  }
-  mutePrimaryVideo() {
-    if (this.primary_video) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Primary Video Player Muted.`);
-      this.primary_video.muted = true;
-      this.primary_video.style.setProperty('display', 'none');
-    }
-  }
-  restorePrimaryVideo() {
-    if (this.primary_video) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Primary Video Player Restored.`);
-      this.primary_video.muted = this.player_mute_cache;
-      this.primary_video.style.removeProperty('display');
-    }
-  }
-  maximizeSecondaryVideo() {
-    if (this.primary_video && this.secondary_video) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Secondary Video Player Maximized.`);
-      const { width, height, top, left } = this.primary_video.getBoundingClientRect();
-      this.secondary_video.style.setProperty('width', width + 'px');
-      this.secondary_video.style.setProperty('height', height + 'px');
-      this.secondary_video.style.setProperty('top', top + '');
-      this.secondary_video.style.setProperty('left', left + '');
-      this.secondary_video.style.setProperty('position', 'fixed');
-      this.secondary_video.style.setProperty('z-index', '99999');
-    }
-  }
-  restoreSecondaryVideo() {
-    if (this.secondary_video) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Secondary Video Player Restored.`);
-      this.secondary_video.style.removeProperty('width');
-      this.secondary_video.style.removeProperty('height');
-      this.secondary_video.style.removeProperty('top');
-      this.secondary_video.style.removeProperty('left');
-      this.secondary_video.style.removeProperty('position');
-      this.secondary_video.style.removeProperty('z-index');
-    }
-  }
   observer1;
-  observer2;
   setup() {
     Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME2}`);
     this.observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
-      selector: 'video',
+      selector: 'button',
     });
     this.observer1.subscribe((element1) => {
-      if (element1.matches('main video')) {
-        Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Primary Video Player Found.`);
-        this.primary_video = element1;
-      } else {
-        Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Secondary Video Player Found.`);
-        this.secondary_video = element1;
+      if (element1 instanceof HTMLButtonElement) {
+        if (element1.textContent === 'Return to stream') {
+          Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Returning.`);
+          element1.click();
+        }
       }
-    });
-    this.observer2 = WebPlatform_DOM_Element_Added_Observer_Class({
-      selector: '[data-a-target="video-ad-label"]',
-    });
-    this.observer2.subscribe((element1) => {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Ad Label Connected.`);
-      this.player_mute_cache = this.primary_video?.muted ?? false;
-      this.mutePrimaryVideo();
-      this.watchAdElement(element1);
     });
   }
   cleanup() {
     Core_Console_Log(`[Twitch Mod]: Clean Up: ${MODNAME2}`);
-    clearTimeout(this.timer);
     this.observer1?.disconnect();
-    this.observer2?.disconnect();
-    this.restorePrimaryVideo();
   }
 }
 SubscribeToUrlChange(InitModuleSetupHandler(Module));

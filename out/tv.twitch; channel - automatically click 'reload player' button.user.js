@@ -1,16 +1,16 @@
 // ==UserScript==
 // @name        tv.twitch; channel - automatically click 'reload player' button
 // @match       *://www.twitch.tv/*
-// @version     1.1.0
+// @version     1.1.1
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
-// src/lib/ericchase/Core_Console_Error.ts
-function Core_Console_Error(...items) {
-  console['error'](...items);
+// src/lib/ericchase/Core_Console_Log.ts
+function Core_Console_Log(...items) {
+  console['log'](...items);
 }
 
 // src/lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.ts
@@ -114,9 +114,10 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
 }
 
 // src/lib/HistoryObserver.ts
+var MODNAME = 'History Observer';
 function SubscribeToUrlChange(callback) {
   if (window.history.isObserverSetUp !== true) {
-    console.log('setup history observer');
+    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME}`);
     window.history.isObserverSetUp = true;
     window.history.onUrlChangeSubscriptions = new Set();
     window.history.originalPushState = window.history.pushState;
@@ -200,22 +201,24 @@ function InitModuleSetupHandler(constructor) {
 }
 
 // src/tv.twitch; channel - automatically click 'reload player' button.user.ts
+var MODNAME2 = 'Reload Player';
+
 class Module {
   observer1;
   setup() {
-    console.log('setup reload player');
+    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME2}`);
     this.observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
       selector: 'button',
     });
     this.observer1.subscribe((element1) => {
       if (element1.textContent === 'Click Here to Reload Player') {
-        Core_Console_Error('Player crashed. Reloading.');
+        Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Player Crashed. Reloading.`);
         window.location.reload();
       }
     });
   }
   cleanup() {
-    console.log('cleanup reload player');
+    Core_Console_Log(`[Twitch Mod]: Clean Up: ${MODNAME2}`);
     this.observer1?.disconnect();
   }
 }

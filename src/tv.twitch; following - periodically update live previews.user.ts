@@ -1,13 +1,16 @@
 // ==UserScript==
 // @name        tv.twitch; following - periodically update live previews
 // @include     /^https:\/\/www\.twitch\.tv\/directory\/following\/?.*$/
-// @version     1.0.3
+// @version     1.0.4
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
 
+const MODNAME = 'Update Live Previews';
+
+import { Core_Console_Log } from './lib/ericchase/Core_Console_Log.js';
 import { WebPlatform_DOM_Element_Added_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.js';
 
 // <img class="tw-image" src="https://static-cdn.jtvnw.net/previews-ttv/live_user_USERNAME-320x180.jpg">
@@ -44,6 +47,7 @@ function updateThumbnailSrc(thumbnail: Element) {
 }
 
 function updateAllThumbnails() {
+  Core_Console_Log(`[Twitch Mod] ${MODNAME}: Updating Thumbnails.`);
   for (const thumbnail of thumbnail_set) {
     updateThumbnailSrc(thumbnail);
   }

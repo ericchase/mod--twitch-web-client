@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name        tv.twitch; scroll volume
 // @match       https://www.twitch.tv/*
-// @version     1.0.2
+// @version     1.0.3
 // @description 2023/01/02
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
 // ==/UserScript==
+
+import { Core_Console_Log } from '../src/lib/ericchase/Core_Console_Log.js';
 
 const settings = {
   volumeStepAmount: 0.05,
@@ -55,7 +57,7 @@ function updateVolume(volume, elVideo, elSlider, elSliderDisplay) {
 let setupComplete = false;
 (function main() {
   setTimeout(() => {
-    if (!setupComplete) console.log('Twitch: Scroll to Change Volume - Failed to Initialize');
+    if (!setupComplete) Core_Console_Log('Twitch: Scroll to Change Volume - Failed to Initialize');
   }, 10000);
 
   watchForDescendants({ selector: 'video' }, function callback(elVideo) {
