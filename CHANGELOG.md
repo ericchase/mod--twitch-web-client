@@ -1,22 +1,23 @@
 ## 2025-11-01
 
-- added a light-weight module system for loading and unloading mods for single-page-app (which twitch behaves as)
-  - added history observer to power the module system
-- added user click handling to 'Enter Theatre Mode' mod
-- added 'Return To Stream' mod
-- tweaked 'Mute Ads' mod (WIP)
-- added better logging
+- Add a light-weight module system for loading and unloading mods for single-page-app (which twitch behaves as)
+  - Add history observer to power the module system
+- Add user click handling to 'Enter Theatre Mode' mod
+- Add 'Return To Stream' mod
+- Tweak 'Mute Ads' mod (WIP)
+- Add better logging
 
 [HotFix] 2025-11-11
 
 - `tv.twitch; channel - automatically enter theatre mode`
-  - fixed an observer leak
+  - Fix an observer leak
 - `tv.twitch; following - periodically update live previews.user.js`
-  - updated to use module system
-- tweaked the `ModuleInterface` interface a bit
-  - updated relevant userscripts:
+  - Update to use module system
+- Tweak the `ModuleInterface` interface a bit
+  - Update relevant userscripts:
   - `tv.twitch; channel - automatically click 'reload player' button.user.js`
   - `tv.twitch; channel - automatically click 'return to stream' button.user.js`
   - `tv.twitch; channel - automatically enter theatre mode.user.js`
   - `tv.twitch; channel - mute ads.user.js`
   - `tv.twitch; following - periodically update live previews.user.js`
+- Forgot to start the initial setup

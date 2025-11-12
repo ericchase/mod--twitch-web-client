@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - automatically click 'return to stream' button
 // @match       *://www.twitch.tv/*
-// @version     1.0.0
+// @version     1.1.1
 // @description 2025/11/07
 // @run-at      document-start
 // @grant       none

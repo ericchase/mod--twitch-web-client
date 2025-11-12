@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     1.1.1
+// @version     1.2.1
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none

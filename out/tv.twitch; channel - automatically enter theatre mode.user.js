@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - automatically enter theatre mode
 // @match       *://www.twitch.tv/*
-// @version     1.2.0
+// @version     1.2.1
 // @description 2025/09/23
 // @run-at      document-start
 // @grant       none
@@ -227,13 +227,14 @@ function SubscribeToUrlChange(callback) {
 // src/lib/UserScriptModule.ts
 function AutomatedModuleSetup(constructor, matches_url) {
   const module_instance = new constructor();
-  const handler = Core_Utility_Debounce(() => {
+  const startup_handler = Core_Utility_Debounce(() => {
     module_instance.clean();
     if (matches_url()) {
       module_instance.setup();
     }
   }, 1000);
-  SubscribeToUrlChange(handler);
+  startup_handler();
+  SubscribeToUrlChange(startup_handler);
 }
 
 // src/tv.twitch; channel - automatically enter theatre mode.user.ts

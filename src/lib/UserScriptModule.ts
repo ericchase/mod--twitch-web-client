@@ -9,11 +9,12 @@ export interface ModuleInterface {
 
 export function AutomatedModuleSetup(constructor: new () => ModuleInterface, matches_url: () => boolean) {
   const module_instance: ModuleInterface | undefined = new constructor();
-  const handler = Core_Utility_Debounce(() => {
+  const startup_handler = Core_Utility_Debounce(() => {
     module_instance.clean();
     if (matches_url()) {
       module_instance.setup();
     }
   }, 1000);
-  SubscribeToUrlChange(handler);
+  startup_handler();
+  SubscribeToUrlChange(startup_handler);
 }

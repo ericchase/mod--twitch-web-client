@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; following - periodically update live previews
 // @match       *://www.twitch.tv/*
-// @version     1.0.4
+// @version     1.1.1
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none
@@ -185,13 +185,14 @@ function SubscribeToUrlChange(callback) {
 // src/lib/UserScriptModule.ts
 function AutomatedModuleSetup(constructor, matches_url) {
   const module_instance = new constructor();
-  const handler = Core_Utility_Debounce(() => {
+  const startup_handler = Core_Utility_Debounce(() => {
     module_instance.clean();
     if (matches_url()) {
       module_instance.setup();
     }
   }, 1000);
-  SubscribeToUrlChange(handler);
+  startup_handler();
+  SubscribeToUrlChange(startup_handler);
 }
 
 // src/tv.twitch; following - periodically update live previews.user.ts

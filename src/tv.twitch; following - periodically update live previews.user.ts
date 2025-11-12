@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; following - periodically update live previews
 // @match       *://www.twitch.tv/*
-// @version     1.0.4
+// @version     1.1.1
 // @description 2025/09/22
 // @run-at      document-start
 // @grant       none

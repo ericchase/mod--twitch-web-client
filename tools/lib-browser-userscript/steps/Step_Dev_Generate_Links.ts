@@ -53,7 +53,12 @@ async function async_getATags(dirpath: string, pattern: string): Promise<string[
     .sort((a, b) => {
       return a.ext.localeCompare(b.ext);
     });
+  let ext: string | undefined = undefined;
   for (const po of path_objects) {
+    if (ext !== po.ext) {
+      ext = po.ext;
+      tags.push(`<p>${ext}</p>`);
+    }
     tags.push(`<a href="${po.join({ dot: true })}" target="_blank">${po.join()}</a>`);
   }
   return tags;
