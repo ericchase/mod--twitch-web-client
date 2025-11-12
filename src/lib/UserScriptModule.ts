@@ -1,22 +1,19 @@
 import { Core_Utility_Debounce } from './ericchase/Core_Utility_Debounce.js';
+import { SubscribeToUrlChange } from './HistoryObserver.js';
 
 export interface ModuleInterface {
+  name: string;
+  clean: () => void;
   setup: () => void;
-  cleanup: () => void;
 }
 
-export function InitModuleSetupHandler(constructor: new () => ModuleInterface) {
-  let module_instance: ModuleInterface | undefined = undefined;
-  const debouncedSetup = Core_Utility_Debounce(() => {
-    if (window.location.pathname.startsWith('/directory') !== true) {
-      module_instance = new constructor();
+export function AutomatedModuleSetup(constructor: new () => ModuleInterface, matches_url: () => boolean) {
+  const module_instance: ModuleInterface | undefined = new constructor();
+  const handler = Core_Utility_Debounce(() => {
+    module_instance.clean();
+    if (matches_url()) {
       module_instance.setup();
     }
-  }, 2500);
-  debouncedSetup();
-  return function () {
-    module_instance?.cleanup();
-    module_instance = undefined;
-    debouncedSetup();
-  };
+  }, 1000);
+  SubscribeToUrlChange(handler);
 }

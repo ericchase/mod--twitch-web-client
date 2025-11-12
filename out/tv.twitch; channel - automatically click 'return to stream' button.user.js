@@ -113,31 +113,6 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
-// src/lib/HistoryObserver.ts
-var MODNAME = 'History Observer';
-function SubscribeToUrlChange(callback) {
-  if (window.history.isObserverSetUp !== true) {
-    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME}`);
-    window.history.isObserverSetUp = true;
-    window.history.onUrlChangeSubscriptions = new Set();
-    window.history.originalPushState = window.history.pushState;
-    window.history.originalReplaceState = window.history.replaceState;
-    window.history.pushState = function (...args) {
-      window.history.originalPushState.apply(this, args);
-      for (const fn of window.history.onUrlChangeSubscriptions) {
-        fn();
-      }
-    };
-    window.history.replaceState = function (...args) {
-      window.history.originalReplaceState.apply(this, args);
-      for (const fn of window.history.onUrlChangeSubscriptions) {
-        fn();
-      }
-    };
-  }
-  window.history.onUrlChangeSubscriptions.add(callback);
-}
-
 // src/lib/ericchase/Core_Promise_Deferred_Class.ts
 class Class_Core_Promise_Deferred_Class {
   promise;
@@ -183,45 +158,70 @@ function Core_Utility_Debounce(fn, delay_ms) {
   };
 }
 
+// src/lib/HistoryObserver.ts
+function SubscribeToUrlChange(callback) {
+  if (window.history.isObserverSetUp !== true) {
+    Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
+    window.history.isObserverSetUp = true;
+    window.history.onUrlChangeSubscriptions = new Set();
+    window.history.originalPushState = window.history.pushState;
+    window.history.originalReplaceState = window.history.replaceState;
+    window.history.pushState = function (...args) {
+      window.history.originalPushState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+    window.history.replaceState = function (...args) {
+      window.history.originalReplaceState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+  }
+  window.history.onUrlChangeSubscriptions.add(callback);
+}
+
 // src/lib/UserScriptModule.ts
-function InitModuleSetupHandler(constructor) {
-  let module_instance = undefined;
-  const debouncedSetup = Core_Utility_Debounce(() => {
-    if (window.location.pathname.startsWith('/directory') !== true) {
-      module_instance = new constructor();
+function AutomatedModuleSetup(constructor, matches_url) {
+  const module_instance = new constructor();
+  const handler = Core_Utility_Debounce(() => {
+    module_instance.clean();
+    if (matches_url()) {
       module_instance.setup();
     }
-  }, 2500);
-  debouncedSetup();
-  return function () {
-    module_instance?.cleanup();
-    module_instance = undefined;
-    debouncedSetup();
-  };
+  }, 1000);
+  SubscribeToUrlChange(handler);
 }
 
 // src/tv.twitch; channel - automatically click 'return to stream' button.user.ts
-var MODNAME2 = 'Return To Stream';
-
 class Module {
-  observer1;
+  name = 'Return To Stream';
+  observer_set = new Set();
+  clean() {
+    Core_Console_Log(`[Twitch Mod]: Clean: ${this.name}`);
+    for (const observer of this.observer_set) {
+      observer.disconnect();
+    }
+    this.observer_set.clear();
+  }
   setup() {
-    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME2}`);
-    this.observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
+    Core_Console_Log(`[Twitch Mod]: Setup: ${this.name}`);
+    this.createObserver1();
+  }
+  createObserver1() {
+    const observer = WebPlatform_DOM_Element_Added_Observer_Class({
       selector: 'button',
     });
-    this.observer1.subscribe((element1) => {
-      if (element1 instanceof HTMLButtonElement) {
-        if (element1.textContent === 'Return to stream') {
-          Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Returning.`);
-          element1.click();
+    this.observer_set.add(observer);
+    observer.subscribe((element) => {
+      if (element instanceof HTMLButtonElement) {
+        if (element.textContent === 'Return to stream') {
+          Core_Console_Log(`[Twitch Mod]: ${this.name}: Click Button.`);
+          element.click();
         }
       }
     });
   }
-  cleanup() {
-    Core_Console_Log(`[Twitch Mod]: Clean Up: ${MODNAME2}`);
-    this.observer1?.disconnect();
-  }
 }
-SubscribeToUrlChange(InitModuleSetupHandler(Module));
+AutomatedModuleSetup(Module, () => !window.location.pathname.startsWith('/directory'));

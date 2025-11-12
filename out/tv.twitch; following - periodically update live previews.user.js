@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        tv.twitch; following - periodically update live previews
-// @include     /^https:\/\/www\.twitch\.tv\/directory\/following\/?.*$/
+// @match       *://www.twitch.tv/*
 // @version     1.0.4
 // @description 2025/09/22
 // @run-at      document-start
@@ -113,41 +113,145 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
-// src/tv.twitch; following - periodically update live previews.user.ts
-var MODNAME = 'Update Live Previews';
-var update_interval = 5 * 1000;
-var thumbnail_set = new Set();
-var resolution_regex = /320x180|440x248/;
-var desired_resolution = '640x360';
-var arbitrary_counter = 0;
-var observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
-  selector: 'img[class="tw-image"]',
-});
-observer1.subscribe((element1) => {
-  if (element1.getAttribute('src')?.match(resolution_regex)?.index) {
-    if (thumbnail_set.size === 0) {
-      setTimeout(updateAllThumbnails, update_interval);
+// src/lib/ericchase/Core_Promise_Deferred_Class.ts
+class Class_Core_Promise_Deferred_Class {
+  promise;
+  reject;
+  resolve;
+  constructor() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
+    });
+    if (this.resolve === undefined || this.reject === undefined) {
+      throw new Error(`${Class_Core_Promise_Deferred_Class.name}'s constructor failed to setup promise functions.`);
     }
-    thumbnail_set.add(element1);
-    updateThumbnailSrc(element1);
-  }
-});
-function updateThumbnailSrc(thumbnail) {
-  const src = thumbnail.getAttribute('src');
-  if (src) {
-    const src_url = new URL(src.replace(resolution_regex, desired_resolution));
-    src_url.searchParams.set('ac', arbitrary_counter.toString(10));
-    thumbnail.setAttribute('src', src_url.toString());
-    arbitrary_counter++;
   }
 }
-function updateAllThumbnails() {
-  Core_Console_Log(`[Twitch Mod] ${MODNAME}: Updating Thumbnails.`);
-  for (const thumbnail of thumbnail_set) {
-    updateThumbnailSrc(thumbnail);
-  }
-  if (arbitrary_counter > 999999) {
-    arbitrary_counter = 0;
-  }
-  setTimeout(updateAllThumbnails, update_interval);
+function Core_Promise_Deferred_Class() {
+  return new Class_Core_Promise_Deferred_Class();
 }
+
+// src/lib/ericchase/Core_Promise_Orphan.ts
+function Core_Promise_Orphan(promise) {}
+
+// src/lib/ericchase/Core_Utility_Debounce.ts
+function Core_Utility_Debounce(fn, delay_ms) {
+  let deferred = Core_Promise_Deferred_Class();
+  let timeout = undefined;
+  async function async_callback(...args) {
+    try {
+      await fn(...args);
+      deferred.resolve();
+    } catch (error) {
+      deferred.reject(error);
+    } finally {
+      deferred = Core_Promise_Deferred_Class();
+    }
+  }
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      Core_Promise_Orphan(async_callback(...args));
+    }, delay_ms);
+    return deferred.promise;
+  };
+}
+
+// src/lib/HistoryObserver.ts
+function SubscribeToUrlChange(callback) {
+  if (window.history.isObserverSetUp !== true) {
+    Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
+    window.history.isObserverSetUp = true;
+    window.history.onUrlChangeSubscriptions = new Set();
+    window.history.originalPushState = window.history.pushState;
+    window.history.originalReplaceState = window.history.replaceState;
+    window.history.pushState = function (...args) {
+      window.history.originalPushState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+    window.history.replaceState = function (...args) {
+      window.history.originalReplaceState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+  }
+  window.history.onUrlChangeSubscriptions.add(callback);
+}
+
+// src/lib/UserScriptModule.ts
+function AutomatedModuleSetup(constructor, matches_url) {
+  const module_instance = new constructor();
+  const handler = Core_Utility_Debounce(() => {
+    module_instance.clean();
+    if (matches_url()) {
+      module_instance.setup();
+    }
+  }, 1000);
+  SubscribeToUrlChange(handler);
+}
+
+// src/tv.twitch; following - periodically update live previews.user.ts
+var desired_resolution = '640x360';
+var resolution_regex = /320x180|440x248/;
+var update_interval = 5 * 1000;
+
+class Module {
+  name = 'Update Live Previews';
+  observer_set = new Set();
+  timer;
+  arbitrary_counter = 0;
+  thumbnail_set = new Set();
+  clean() {
+    Core_Console_Log(`[Twitch Mod]: Clean: ${this.name}`);
+    for (const observer of this.observer_set) {
+      observer.disconnect();
+    }
+    this.observer_set.clear();
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.arbitrary_counter = 0;
+    this.thumbnail_set.clear();
+  }
+  setup() {
+    Core_Console_Log(`[Twitch Mod]: Setup: ${this.name}`);
+    this.createObserver1();
+  }
+  createObserver1() {
+    const observer = WebPlatform_DOM_Element_Added_Observer_Class({
+      selector: 'img[class="tw-image"]',
+    });
+    observer.subscribe((element) => {
+      if (element.getAttribute('src')?.match(resolution_regex)?.index) {
+        if (this.thumbnail_set.size === 0) {
+          this.timer = setTimeout(() => void this.updateAllThumbnails(), update_interval);
+        }
+        this.thumbnail_set.add(element);
+        this.updateThumbnailSrc(element);
+      }
+    });
+  }
+  updateAllThumbnails() {
+    Core_Console_Log(`[Twitch Mod]: ${this.name}: Updating Thumbnails.`);
+    for (const thumbnail of this.thumbnail_set) {
+      this.updateThumbnailSrc(thumbnail);
+    }
+    if (this.arbitrary_counter > 999999) {
+      this.arbitrary_counter = 0;
+    }
+    this.timer = setTimeout(() => void this.updateAllThumbnails(), update_interval);
+  }
+  updateThumbnailSrc(thumbnail) {
+    const src = thumbnail.getAttribute('src');
+    if (src) {
+      const src_url = new URL(src.replace(resolution_regex, desired_resolution));
+      src_url.searchParams.set('ac', this.arbitrary_counter.toString(10));
+      thumbnail.setAttribute('src', src_url.toString());
+      this.arbitrary_counter++;
+    }
+  }
+}
+AutomatedModuleSetup(Module, () => /directory\/following\/?.*$/.test(window.location.pathname));

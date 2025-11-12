@@ -9,11 +9,9 @@ declare global {
   }
 }
 
-const MODNAME = 'History Observer';
-
 export function SubscribeToUrlChange(callback: () => void) {
   if (window.history.isObserverSetUp !== true) {
-    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME}`);
+    Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
     window.history.isObserverSetUp = true;
     window.history.onUrlChangeSubscriptions = new Set();
     window.history.originalPushState = window.history.pushState;

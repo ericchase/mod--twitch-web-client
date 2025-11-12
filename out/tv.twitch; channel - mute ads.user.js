@@ -113,31 +113,6 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
-// src/lib/HistoryObserver.ts
-var MODNAME = 'History Observer';
-function SubscribeToUrlChange(callback) {
-  if (window.history.isObserverSetUp !== true) {
-    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME}`);
-    window.history.isObserverSetUp = true;
-    window.history.onUrlChangeSubscriptions = new Set();
-    window.history.originalPushState = window.history.pushState;
-    window.history.originalReplaceState = window.history.replaceState;
-    window.history.pushState = function (...args) {
-      window.history.originalPushState.apply(this, args);
-      for (const fn of window.history.onUrlChangeSubscriptions) {
-        fn();
-      }
-    };
-    window.history.replaceState = function (...args) {
-      window.history.originalReplaceState.apply(this, args);
-      for (const fn of window.history.onUrlChangeSubscriptions) {
-        fn();
-      }
-    };
-  }
-  window.history.onUrlChangeSubscriptions.add(callback);
-}
-
 // src/lib/ericchase/Core_Promise_Deferred_Class.ts
 class Class_Core_Promise_Deferred_Class {
   promise;
@@ -183,58 +158,97 @@ function Core_Utility_Debounce(fn, delay_ms) {
   };
 }
 
+// src/lib/HistoryObserver.ts
+function SubscribeToUrlChange(callback) {
+  if (window.history.isObserverSetUp !== true) {
+    Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
+    window.history.isObserverSetUp = true;
+    window.history.onUrlChangeSubscriptions = new Set();
+    window.history.originalPushState = window.history.pushState;
+    window.history.originalReplaceState = window.history.replaceState;
+    window.history.pushState = function (...args) {
+      window.history.originalPushState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+    window.history.replaceState = function (...args) {
+      window.history.originalReplaceState.apply(this, args);
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    };
+  }
+  window.history.onUrlChangeSubscriptions.add(callback);
+}
+
 // src/lib/UserScriptModule.ts
-function InitModuleSetupHandler(constructor) {
-  let module_instance = undefined;
-  const debouncedSetup = Core_Utility_Debounce(() => {
-    if (window.location.pathname.startsWith('/directory') !== true) {
-      module_instance = new constructor();
+function AutomatedModuleSetup(constructor, matches_url) {
+  const module_instance = new constructor();
+  const handler = Core_Utility_Debounce(() => {
+    module_instance.clean();
+    if (matches_url()) {
       module_instance.setup();
     }
-  }, 2500);
-  debouncedSetup();
-  return function () {
-    module_instance?.cleanup();
-    module_instance = undefined;
-    debouncedSetup();
-  };
+  }, 1000);
+  SubscribeToUrlChange(handler);
 }
 
 // src/tv.twitch; channel - mute ads.user.ts
-var MODNAME2 = 'Mute Ads';
-
 class Module {
-  player_mute_cache = false;
+  name = 'Mute Ads';
+  observer_set = new Set();
   primary_video;
   secondary_video;
   timer;
-  watchAdElement(element) {
-    if (element.isConnected === false) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Ad Label Disconnected.`);
-      this.restorePrimaryVideo();
-    } else {
-      this.timer = setTimeout(() => {
-        this.watchAdElement(element);
-      }, 250);
+  ads_running = false;
+  player_mute_status_before_ads = false;
+  clean() {
+    Core_Console_Log(`[Twitch Mod]: Clean: ${this.name}`);
+    for (const observer of this.observer_set) {
+      observer.disconnect();
+    }
+    this.observer_set.clear();
+    this.restorePrimaryVideo();
+    this.restoreSecondaryVideo();
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.ads_running = false;
+    this.player_mute_status_before_ads = false;
+  }
+  setup() {
+    Core_Console_Log(`[Twitch Mod]: Setup: ${this.name}`);
+    this.createObserver1();
+    this.createObserver2();
+  }
+  restorePrimaryVideo() {
+    if (this.primary_video) {
+      Core_Console_Log(`[Twitch Mod]: ${this.name}: Primary Video Player Restored.`);
+      this.primary_video.muted = this.player_mute_status_before_ads;
+      this.primary_video.style.removeProperty('display');
     }
   }
   mutePrimaryVideo() {
     if (this.primary_video) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Primary Video Player Muted.`);
+      Core_Console_Log(`[Twitch Mod]: ${this.name}: Primary Video Player Muted.`);
       this.primary_video.muted = true;
       this.primary_video.style.setProperty('display', 'none');
     }
   }
-  restorePrimaryVideo() {
-    if (this.primary_video) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Primary Video Player Restored.`);
-      this.primary_video.muted = this.player_mute_cache;
-      this.primary_video.style.removeProperty('display');
+  restoreSecondaryVideo() {
+    if (this.secondary_video) {
+      Core_Console_Log(`[Twitch Mod]: ${this.name}: Secondary Video Player Restored.`);
+      this.secondary_video.style.removeProperty('width');
+      this.secondary_video.style.removeProperty('height');
+      this.secondary_video.style.removeProperty('top');
+      this.secondary_video.style.removeProperty('left');
+      this.secondary_video.style.removeProperty('position');
+      this.secondary_video.style.removeProperty('z-index');
     }
   }
   maximizeSecondaryVideo() {
     if (this.primary_video && this.secondary_video) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Secondary Video Player Maximized.`);
+      Core_Console_Log(`[Twitch Mod]: ${this.name}: Secondary Video Player Maximized.`);
       const { width, height, top, left } = this.primary_video.getBoundingClientRect();
       this.secondary_video.style.setProperty('width', width + 'px');
       this.secondary_video.style.setProperty('height', height + 'px');
@@ -244,49 +258,49 @@ class Module {
       this.secondary_video.style.setProperty('z-index', '99999');
     }
   }
-  restoreSecondaryVideo() {
-    if (this.secondary_video) {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Secondary Video Player Restored.`);
-      this.secondary_video.style.removeProperty('width');
-      this.secondary_video.style.removeProperty('height');
-      this.secondary_video.style.removeProperty('top');
-      this.secondary_video.style.removeProperty('left');
-      this.secondary_video.style.removeProperty('position');
-      this.secondary_video.style.removeProperty('z-index');
-    }
-  }
-  observer1;
-  observer2;
-  setup() {
-    Core_Console_Log(`[Twitch Mod]: Setup: ${MODNAME2}`);
-    this.observer1 = WebPlatform_DOM_Element_Added_Observer_Class({
+  createObserver1() {
+    const observer = WebPlatform_DOM_Element_Added_Observer_Class({
       selector: 'video',
     });
-    this.observer1.subscribe((element1) => {
-      if (element1.matches('main video')) {
-        Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Primary Video Player Found.`);
-        this.primary_video = element1;
+    this.observer_set.add(observer);
+    observer.subscribe((element) => {
+      if (element.matches('main video')) {
+        Core_Console_Log(`[Twitch Mod]: ${this.name}: Primary Video Player Found.`);
+        this.primary_video = element;
       } else {
-        Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Secondary Video Player Found.`);
-        this.secondary_video = element1;
+        Core_Console_Log(`[Twitch Mod]: ${this.name}: Secondary Video Player Found.`);
+        this.secondary_video = element;
+        if (this.ads_running === true) {
+          this.maximizeSecondaryVideo();
+        }
       }
     });
-    this.observer2 = WebPlatform_DOM_Element_Added_Observer_Class({
+  }
+  createObserver2() {
+    const observer = WebPlatform_DOM_Element_Added_Observer_Class({
       selector: '[data-a-target="video-ad-label"]',
     });
-    this.observer2.subscribe((element1) => {
-      Core_Console_Log(`[Twitch Mod] ${MODNAME2}: Ad Label Connected.`);
-      this.player_mute_cache = this.primary_video?.muted ?? false;
+    this.observer_set.add(observer);
+    observer.subscribe((element) => {
+      Core_Console_Log(`[Twitch Mod]: ${this.name}: Ad Label Connected.`);
+      this.ads_running = true;
+      this.player_mute_status_before_ads = this.primary_video?.muted ?? false;
       this.mutePrimaryVideo();
-      this.watchAdElement(element1);
+      this.maximizeSecondaryVideo();
+      this.watchAdElement(element);
     });
   }
-  cleanup() {
-    Core_Console_Log(`[Twitch Mod]: Clean Up: ${MODNAME2}`);
-    clearTimeout(this.timer);
-    this.observer1?.disconnect();
-    this.observer2?.disconnect();
-    this.restorePrimaryVideo();
+  watchAdElement(element) {
+    if (element.isConnected === false) {
+      Core_Console_Log(`[Twitch Mod]: ${this.name}: Ad Label Disconnected.`);
+      this.restorePrimaryVideo();
+      this.restoreSecondaryVideo();
+      clearTimeout(this.timer);
+      this.timer = undefined;
+      this.ads_running = false;
+    } else {
+      this.timer = setTimeout(() => void this.watchAdElement(element), 250);
+    }
   }
 }
-SubscribeToUrlChange(InitModuleSetupHandler(Module));
+AutomatedModuleSetup(Module, () => !window.location.pathname.startsWith('/directory'));
