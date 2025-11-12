@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     1.2.1
+// @version     1.2.2
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -286,8 +286,8 @@ class Module {
       Core_Console_Log(`[Twitch Mod]: ${this.name}: Ad Label Connected.`);
       this.ads_running = true;
       this.player_mute_status_before_ads = this.primary_video?.muted ?? false;
-      this.mutePrimaryVideo();
       this.maximizeSecondaryVideo();
+      this.mutePrimaryVideo();
       this.watchAdElement(element);
     });
   }
