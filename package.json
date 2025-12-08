@@ -1,9 +1,9 @@
 {
   "dependencies": {},
   "devDependencies": {
-    "@types/bun": "1.3.2",
-    "@types/chrome": "0.1.28",
-    "@types/node": "24.10.1",
+    "@types/bun": "1.3.4",
+    "@types/chrome": "0.1.32",
+    "@types/node": "24.10.2",
     "tree-kill": "1.2.2"
   },
   "scripts": {

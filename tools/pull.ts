@@ -13,7 +13,7 @@ const template_path = 'C:/Code/Base/JavaScript-TypeScript/Templates/Browser-User
 const lib_folders: string[] = ['lib-browser-userscript'];
 
 Builder.SetStartUpSteps(
-  Step_Bun_Run({ cmd: ['bun', 'install'], showlogs: false }),
+  Step_Bun_Run({ cmd: ['sfw', 'bun', 'install'], showlogs: false }),
   Step_Dev_Project_Sync_Core({ from_dir: template_path, into_dir: '.' }),
   Step_Dev_Project_Sync_Server({ from_dir: template_path, into_dir: '.' }),
   Step_Async(

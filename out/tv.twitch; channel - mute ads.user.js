@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     1.2.2
+// @version     2.0.0
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -113,6 +113,45 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
+// src/lib/ericchase/WebPlatform_Utility_Ancestor_Node.ts
+function WebPlatform_Utility_Get_Ancestor_List(node) {
+  const list = [];
+  let parent = node.parentNode;
+  while (parent !== null) {
+    list.push(parent);
+    parent = parent.parentNode;
+  }
+  return list.toReversed();
+}
+function WebPlatform_Utility_Get_Closest_Common_Ancestor(...nodes) {
+  if (nodes.length > 0) {
+    const ancestor_lists = [];
+    for (const node of nodes) {
+      ancestor_lists.push(WebPlatform_Utility_Get_Ancestor_List(node));
+    }
+    let inner_list_min_length = ancestor_lists[0].length;
+    for (let i = 1; i < ancestor_lists.length; i++) {
+      if (ancestor_lists[i].length < inner_list_min_length) {
+        inner_list_min_length = ancestor_lists[i].length;
+      }
+    }
+    let current_common_ancestor = undefined;
+    for (let inner_list_i = 0; inner_list_i < inner_list_min_length; inner_list_i++) {
+      let is_common = true;
+      for (let ancestor_lists_i = 1; ancestor_lists_i < ancestor_lists.length; ancestor_lists_i++) {
+        if (ancestor_lists[0][inner_list_i] !== ancestor_lists[ancestor_lists_i][inner_list_i]) {
+          is_common = false;
+          break;
+        }
+      }
+      if (is_common === true) {
+        current_common_ancestor = ancestor_lists[0][inner_list_i];
+      }
+    }
+    return current_common_ancestor;
+  }
+}
+
 // src/lib/ericchase/Core_Promise_Deferred_Class.ts
 class Class_Core_Promise_Deferred_Class {
   promise;
@@ -196,112 +235,284 @@ function AutomatedModuleSetup(constructor, matches_url) {
 }
 
 // src/tv.twitch; channel - mute ads.user.ts
+function isPrimaryVideoPlayer(element) {
+  if (element.matches('main video')) {
+    return true;
+  }
+  return false;
+}
+var VideoManager = new (class {
+  video_map = new Map();
+  primary_video_count = 0;
+  secondary_video_count = 0;
+  ads_running = false;
+  cache_muted = false;
+  cache_volume = 0;
+  restore_styles_list = [];
+  clean() {
+    this.adsStopped();
+    this.video_map.clear();
+    this.primary_video_count = 0;
+    this.secondary_video_count = 0;
+  }
+  addVideo(element) {
+    const obj = {
+      element,
+      is_connected: true,
+      is_modified: false,
+      is_muted: false,
+      is_primary: isPrimaryVideoPlayer(element),
+    };
+    this.video_map.set(element, obj);
+    if (obj.is_primary === true) {
+      if (this.ads_running === true) {
+        this.modifyPrimaryVideo(obj);
+      }
+      VideoManager.primary_video_count++;
+    } else {
+      VideoManager.secondary_video_count++;
+      if (this.ads_running === true) {
+        this.modifySecondaryVideo(obj);
+      } else {
+        setTimeout(() => {
+          if (this.ads_running !== true) {
+            const primary_obj = this.getPrimaryVideoObject();
+            if (primary_obj !== undefined) {
+              primary_obj.is_muted = true;
+              this.cache_muted = primary_obj.element.muted;
+              this.cache_volume = primary_obj.element.volume;
+              primary_obj.element.muted = true;
+            }
+          }
+        }, 1e4);
+      }
+    }
+    return obj;
+  }
+  removeVideo(element) {
+    const obj = this.video_map.get(element);
+    if (obj === undefined) {
+      return;
+    }
+    this.video_map.delete(element);
+    if (obj.is_primary === true) {
+      VideoManager.primary_video_count--;
+    } else {
+      VideoManager.secondary_video_count--;
+    }
+  }
+  modifyPrimaryVideo(obj) {
+    if (obj.is_modified !== true) {
+      obj.is_modified = true;
+      if (obj.is_muted === false) {
+        obj.is_muted = true;
+        this.cache_muted = obj.element.muted;
+        this.cache_volume = obj.element.volume;
+        obj.element.muted = true;
+      }
+      obj.element.style.setProperty('opacity', '0');
+    }
+  }
+  modifySecondaryVideo(obj) {
+    if (obj.is_modified !== true) {
+      obj.is_modified = true;
+      obj.element.muted = this.cache_muted;
+      obj.element.volume = this.cache_volume;
+      const primary_obj = this.getPrimaryVideoObject();
+      if (primary_obj !== undefined) {
+        const rect = obj.element.getBoundingClientRect();
+        const primary_rect = primary_obj.element.getBoundingClientRect();
+        obj.element.style.setProperty('width', `${primary_rect.width}px`);
+        obj.element.style.setProperty('height', `${primary_rect.height}px`);
+        obj.element.style.setProperty('top', `${primary_rect.top - rect.top}px`);
+        obj.element.style.setProperty('left', `${primary_rect.left - rect.left}px`);
+        const common_ancestor = WebPlatform_Utility_Get_Closest_Common_Ancestor(obj.element, primary_obj.element);
+        if (common_ancestor !== undefined) {
+          const secondary_ancestor_list = WebPlatform_Utility_Get_Ancestor_List(obj.element);
+          const common_ancestor_index = secondary_ancestor_list.indexOf(common_ancestor);
+          if (common_ancestor_index !== -1) {
+            for (let i = common_ancestor_index + 1; i < secondary_ancestor_list.length; i++) {
+              const ancestor = secondary_ancestor_list[i];
+              if (ancestor instanceof HTMLElement) {
+                if (window.getComputedStyle(ancestor).overflow !== 'visible') {
+                  this.restore_styles_list.push([ancestor, 'overflow', ancestor.style.getPropertyValue('overflow')]);
+                  ancestor.style.setProperty('overflow', 'visible');
+                }
+              }
+            }
+            for (let i = common_ancestor_index + 1; i < secondary_ancestor_list.length; i++) {
+              const ancestor = secondary_ancestor_list[i];
+              if (ancestor instanceof HTMLElement) {
+                this.restore_styles_list.push([ancestor, 'z-index', ancestor.style.getPropertyValue('z-index')]);
+                ancestor.style.setProperty('z-index', '99999');
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  restorePrimaryVideo(obj) {
+    if (obj.is_modified === true) {
+      obj.is_modified = false;
+      obj.is_muted = false;
+      obj.element.muted = this.cache_muted;
+      obj.element.style.removeProperty('opacity');
+    }
+  }
+  restoreSecondaryVideo(obj) {
+    if (obj.is_modified === true) {
+      obj.is_modified = false;
+      obj.element.muted = true;
+      obj.element.style.removeProperty('width');
+      obj.element.style.removeProperty('height');
+      obj.element.style.removeProperty('top');
+      obj.element.style.removeProperty('left');
+    }
+  }
+  adsStarted() {
+    this.ads_running = true;
+    for (const [_, obj] of this.entries()) {
+      if (obj.is_modified !== true) {
+        if (obj.is_primary === true) {
+          this.modifyPrimaryVideo(obj);
+        } else {
+          this.modifySecondaryVideo(obj);
+        }
+      }
+    }
+  }
+  adsStopped() {
+    this.ads_running = false;
+    for (const [_, obj] of this.entries()) {
+      if (obj.is_modified === true) {
+        if (obj.is_primary === true) {
+          this.restorePrimaryVideo(obj);
+        } else {
+          this.restoreSecondaryVideo(obj);
+        }
+      }
+    }
+    for (const [element, property, value] of this.restore_styles_list) {
+      if (value === '') {
+        element.style.removeProperty(property);
+      } else {
+        element.style.setProperty(property, value);
+      }
+    }
+  }
+  getPrimaryVideoObject() {
+    for (const [_, obj] of this.entries()) {
+      if (obj.is_primary === true) {
+        return obj;
+      }
+    }
+  }
+  *entries() {
+    for (const [element, obj] of this.video_map) {
+      if (element.isConnected === true) {
+        yield [element, obj];
+      } else {
+        obj.is_connected = false;
+      }
+    }
+  }
+})();
+
 class Module {
   name = 'Mute Ads';
   observer_set = new Set();
-  primary_video;
-  secondary_video;
-  timer;
-  ads_running = false;
-  player_mute_status_before_ads = false;
+  adlabel_set = new Set();
+  maintag_set = new Set();
+  ads_timer;
   clean() {
     Core_Console_Log(`[Twitch Mod]: Clean: ${this.name}`);
     for (const observer of this.observer_set) {
       observer.disconnect();
     }
     this.observer_set.clear();
-    this.restorePrimaryVideo();
-    this.restoreSecondaryVideo();
-    clearTimeout(this.timer);
-    this.timer = undefined;
-    this.ads_running = false;
-    this.player_mute_status_before_ads = false;
+    this.adlabel_set.clear();
+    for (const element of this.maintag_set) {
+      element.style.removeProperty('z-index');
+    }
+    this.maintag_set.clear();
+    VideoManager.clean();
+    clearTimeout(this.ads_timer);
+    this.ads_timer = undefined;
   }
   setup() {
     Core_Console_Log(`[Twitch Mod]: Setup: ${this.name}`);
-    this.createObserver1();
-    this.createObserver2();
+    this.createAddedObserver_AdLabels();
+    this.createAddedObserver_MainTag();
+    this.createAddedObserver_VideoElements();
   }
-  restorePrimaryVideo() {
-    if (this.primary_video) {
-      Core_Console_Log(`[Twitch Mod]: ${this.name}: Primary Video Player Restored.`);
-      this.primary_video.muted = this.player_mute_status_before_ads;
-      this.primary_video.style.removeProperty('display');
+  adsStarted() {
+    VideoManager.adsStarted();
+    this.watchAdLabels();
+  }
+  adsStopped() {
+    VideoManager.adsStopped();
+  }
+  watchAdLabels() {
+    if (isAnyElementConnected(this.adlabel_set) === true) {
+      this.ads_timer = setTimeout(() => this.watchAdLabels(), 250);
+    } else {
+      clearTimeout(this.ads_timer);
+      this.ads_timer = undefined;
+      this.adsStopped();
     }
   }
-  mutePrimaryVideo() {
-    if (this.primary_video) {
-      Core_Console_Log(`[Twitch Mod]: ${this.name}: Primary Video Player Muted.`);
-      this.primary_video.muted = true;
-      this.primary_video.style.setProperty('display', 'none');
-    }
+  addAdLabel(element) {
+    Core_Console_Log(`[Twitch Mod]: ${this.name}: Ad Label Found:`, element);
+    this.adlabel_set.add(element);
+    this.adsStarted();
   }
-  restoreSecondaryVideo() {
-    if (this.secondary_video) {
-      Core_Console_Log(`[Twitch Mod]: ${this.name}: Secondary Video Player Restored.`);
-      this.secondary_video.style.removeProperty('width');
-      this.secondary_video.style.removeProperty('height');
-      this.secondary_video.style.removeProperty('top');
-      this.secondary_video.style.removeProperty('left');
-      this.secondary_video.style.removeProperty('position');
-      this.secondary_video.style.removeProperty('z-index');
-    }
+  addMainTag(element) {
+    this.maintag_set.add(element);
   }
-  maximizeSecondaryVideo() {
-    if (this.primary_video && this.secondary_video) {
-      Core_Console_Log(`[Twitch Mod]: ${this.name}: Secondary Video Player Maximized.`);
-      const { width, height, top, left } = this.primary_video.getBoundingClientRect();
-      this.secondary_video.style.setProperty('width', width + 'px');
-      this.secondary_video.style.setProperty('height', height + 'px');
-      this.secondary_video.style.setProperty('top', top + '');
-      this.secondary_video.style.setProperty('left', left + '');
-      this.secondary_video.style.setProperty('position', 'fixed');
-      this.secondary_video.style.setProperty('z-index', '99999');
-    }
+  addVideoElement(element) {
+    const obj = VideoManager.addVideo(element);
+    Core_Console_Log(`[Twitch Mod]: ${this.name}: ${obj.is_primary ? 'Primary' : 'Secondary'} Video Found:`, obj);
   }
-  createObserver1() {
-    const observer = WebPlatform_DOM_Element_Added_Observer_Class({
-      selector: 'video',
-    });
-    this.observer_set.add(observer);
-    observer.subscribe((element) => {
-      if (element.matches('main video')) {
-        Core_Console_Log(`[Twitch Mod]: ${this.name}: Primary Video Player Found.`);
-        this.primary_video = element;
-      } else {
-        Core_Console_Log(`[Twitch Mod]: ${this.name}: Secondary Video Player Found.`);
-        this.secondary_video = element;
-        if (this.ads_running === true) {
-          this.maximizeSecondaryVideo();
-        }
-      }
-    });
-  }
-  createObserver2() {
+  createAddedObserver_AdLabels() {
     const observer = WebPlatform_DOM_Element_Added_Observer_Class({
       selector: '[data-a-target="video-ad-label"]',
     });
     this.observer_set.add(observer);
     observer.subscribe((element) => {
-      Core_Console_Log(`[Twitch Mod]: ${this.name}: Ad Label Connected.`);
-      this.ads_running = true;
-      this.player_mute_status_before_ads = this.primary_video?.muted ?? false;
-      this.maximizeSecondaryVideo();
-      this.mutePrimaryVideo();
-      this.watchAdElement(element);
+      this.addAdLabel(element);
     });
   }
-  watchAdElement(element) {
-    if (element.isConnected === false) {
-      Core_Console_Log(`[Twitch Mod]: ${this.name}: Ad Label Disconnected.`);
-      this.restorePrimaryVideo();
-      this.restoreSecondaryVideo();
-      clearTimeout(this.timer);
-      this.timer = undefined;
-      this.ads_running = false;
-    } else {
-      this.timer = setTimeout(() => void this.watchAdElement(element), 250);
-    }
+  createAddedObserver_MainTag() {
+    const observer = WebPlatform_DOM_Element_Added_Observer_Class({
+      selector: 'main',
+    });
+    this.observer_set.add(observer);
+    observer.subscribe((element) => {
+      if (element instanceof HTMLElement) {
+        this.addMainTag(element);
+      }
+    });
+  }
+  createAddedObserver_VideoElements() {
+    const observer = WebPlatform_DOM_Element_Added_Observer_Class({
+      selector: 'video',
+    });
+    this.observer_set.add(observer);
+    observer.subscribe((element) => {
+      if (element instanceof HTMLVideoElement) {
+        this.addVideoElement(element);
+      }
+    });
   }
 }
 AutomatedModuleSetup(Module, () => !window.location.pathname.startsWith('/directory'));
+function isAnyElementConnected(set) {
+  for (const element of set) {
+    if (element.isConnected === true) {
+      return true;
+    }
+  }
+  return false;
+}
