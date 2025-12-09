@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     2.0.0
+// @version     2.0.1
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -274,17 +274,6 @@ var VideoManager = new (class {
       if (this.ads_running === true) {
         this.modifySecondaryVideo(obj);
       } else {
-        setTimeout(() => {
-          if (this.ads_running !== true) {
-            const primary_obj = this.getPrimaryVideoObject();
-            if (primary_obj !== undefined) {
-              primary_obj.is_muted = true;
-              this.cache_muted = primary_obj.element.muted;
-              this.cache_volume = primary_obj.element.volume;
-              primary_obj.element.muted = true;
-            }
-          }
-        }, 1e4);
       }
     }
     return obj;
