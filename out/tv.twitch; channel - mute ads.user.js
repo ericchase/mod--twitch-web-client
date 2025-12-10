@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     2.0.1
+// @version     2.0.2
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -305,6 +305,24 @@ var VideoManager = new (class {
   modifySecondaryVideo(obj) {
     if (obj.is_modified !== true) {
       obj.is_modified = true;
+      const onVolumeChangeEventHandler = () => {
+        if (obj.element.muted !== this.cache_muted) {
+          obj.element.muted = this.cache_muted;
+        }
+        if (obj.element.volume !== this.cache_volume) {
+          obj.element.volume = this.cache_volume;
+        }
+      };
+      const onPlayEventHandler = () => {
+        if (obj.element.muted !== this.cache_muted) {
+          obj.element.muted = this.cache_muted;
+        }
+        if (obj.element.volume !== this.cache_volume) {
+          obj.element.volume = this.cache_volume;
+        }
+      };
+      obj.element.addEventListener('play', onPlayEventHandler);
+      obj.element.addEventListener('volumechange', onVolumeChangeEventHandler);
       obj.element.muted = this.cache_muted;
       obj.element.volume = this.cache_volume;
       const primary_obj = this.getPrimaryVideoObject();
@@ -353,7 +371,6 @@ var VideoManager = new (class {
   restoreSecondaryVideo(obj) {
     if (obj.is_modified === true) {
       obj.is_modified = false;
-      obj.element.muted = true;
       obj.element.style.removeProperty('width');
       obj.element.style.removeProperty('height');
       obj.element.style.removeProperty('top');

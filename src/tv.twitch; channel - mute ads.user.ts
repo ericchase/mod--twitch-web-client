@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     2.0.1
+// @version     2.0.2
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -121,7 +121,32 @@ const VideoManager = new (class {
     if (obj.is_modified !== true) {
       obj.is_modified = true;
 
-      // set mute and volume
+      // set mute and volume when video starts playing
+      const onVolumeChangeEventHandler = () => {
+        // console.log('volumechange event triggered:', obj.element);
+        if (obj.element.muted !== this.cache_muted) {
+          obj.element.muted = this.cache_muted;
+        }
+        if (obj.element.volume !== this.cache_volume) {
+          obj.element.volume = this.cache_volume;
+        }
+        // const { muted, volume } = obj.element;
+        // console.log({ muted, volume });
+      };
+      const onPlayEventHandler = () => {
+        // console.log('play event triggered:', obj.element);
+        if (obj.element.muted !== this.cache_muted) {
+          obj.element.muted = this.cache_muted;
+        }
+        if (obj.element.volume !== this.cache_volume) {
+          obj.element.volume = this.cache_volume;
+        }
+        // const { muted, volume } = obj.element;
+        // console.log({ muted, volume });
+      };
+      obj.element.addEventListener('play', onPlayEventHandler);
+      obj.element.addEventListener('volumechange', onVolumeChangeEventHandler);
+
       obj.element.muted = this.cache_muted;
       obj.element.volume = this.cache_volume;
 
@@ -179,7 +204,7 @@ const VideoManager = new (class {
       obj.is_modified = false;
 
       // restore mute
-      obj.element.muted = true;
+      // obj.element.muted = true;
 
       // restore position and size
       obj.element.style.removeProperty('width');
