@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     2.0.2
+// @version     2.0.3
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -204,7 +204,7 @@ const VideoManager = new (class {
       obj.is_modified = false;
 
       // restore mute
-      // obj.element.muted = true;
+      obj.element.muted = true;
 
       // restore position and size
       obj.element.style.removeProperty('width');

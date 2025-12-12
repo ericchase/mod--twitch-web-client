@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     2.0.2
+// @version     2.0.3
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -371,6 +371,7 @@ var VideoManager = new (class {
   restoreSecondaryVideo(obj) {
     if (obj.is_modified === true) {
       obj.is_modified = false;
+      obj.element.muted = true;
       obj.element.style.removeProperty('width');
       obj.element.style.removeProperty('height');
       obj.element.style.removeProperty('top');
