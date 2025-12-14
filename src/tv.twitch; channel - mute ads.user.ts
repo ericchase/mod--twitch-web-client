@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel - mute ads
 // @match       *://www.twitch.tv/*
-// @version     2.0.3
+// @version     2.0.4
 // @description 2025/10/09
 // @run-at      document-start
 // @grant       none
@@ -27,6 +27,7 @@ interface VideoObject {
   is_modified: boolean;
   is_muted: boolean;
   is_primary: boolean;
+  restore_fn?: () => void;
 }
 
 const VideoManager = new (class {
@@ -115,6 +116,15 @@ const VideoManager = new (class {
       }
 
       obj.element.style.setProperty('opacity', '0');
+      obj.restore_fn = () => {
+        delete obj.restore_fn;
+
+        obj.is_modified = false;
+        obj.is_muted = false;
+
+        obj.element.muted = this.cache_muted;
+        obj.element.style.removeProperty('opacity');
+      };
     }
   }
   modifySecondaryVideo(obj: VideoObject) {
@@ -187,6 +197,25 @@ const VideoManager = new (class {
           }
         }
       }
+
+      obj.restore_fn = () => {
+        delete obj.restore_fn;
+
+        obj.is_modified = false;
+
+        // remove event listeners
+        obj.element.removeEventListener('play', onPlayEventHandler);
+        obj.element.removeEventListener('volumechange', onVolumeChangeEventHandler);
+
+        // restore mute
+        obj.element.muted = true;
+
+        // restore position and size
+        obj.element.style.removeProperty('width');
+        obj.element.style.removeProperty('height');
+        obj.element.style.removeProperty('top');
+        obj.element.style.removeProperty('left');
+      };
     }
   }
 
@@ -230,10 +259,14 @@ const VideoManager = new (class {
     this.ads_running = false;
     for (const [_, obj] of this.entries()) {
       if (obj.is_modified === true) {
-        if (obj.is_primary === true) {
-          this.restorePrimaryVideo(obj);
+        if (obj.restore_fn !== undefined) {
+          obj.restore_fn();
         } else {
-          this.restoreSecondaryVideo(obj);
+          if (obj.is_primary === true) {
+            this.restorePrimaryVideo(obj);
+          } else {
+            this.restoreSecondaryVideo(obj);
+          }
         }
       }
     }
