@@ -1,6 +1,11 @@
+## 2026-02-01
+
+- `tv.twitch; channel.videos - remove video preview`
+  - Aggressively removes the video preview section when browsing `twitch.tv/<channel>/videos`
+
 ## 2026-01-01
 
-- `tv.twitch; channel - mute ads.user.js`
+- `tv.twitch; channel - mute ads`
   - Better logic for moving and resizing the secondary video during ads
   - Needs faster ad detection logic, but it's good enough for me
 
