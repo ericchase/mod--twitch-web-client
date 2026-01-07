@@ -2,6 +2,8 @@
 
 - `tv.twitch; channel.videos - remove video preview`
   - Aggressively removes the video preview section when browsing `twitch.tv/<channel>/videos`
+- `tv.twitch.m; channel - stop chat from growing too much`
+  - A fix for an issue I have with the twitch mobile site on phone
 
 ## 2026-01-01
 
