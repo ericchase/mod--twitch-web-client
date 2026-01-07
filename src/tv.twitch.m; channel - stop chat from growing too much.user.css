@@ -1,0 +1,15 @@
+/* ==UserStyle==
+@name        tv.twitch.m; channel - stop chat from growing too much
+@version     1.0.0
+@description 2026/01/07
+@namespace   https://github.com/ericchase/mod--twitch-web-client
+==/UserStyle== */
+@-moz-document regexp("^https:\\/\\/m\\.twitch\\.tv\\/(?!directory).+$") {
+  main > div > div > div:nth-child(2) {
+    position: fixed !important;
+    margin-top: 3.75em;
+  }
+  main > div > div > div:nth-child(3) {
+    margin-top: 60vw;
+  }
+}
