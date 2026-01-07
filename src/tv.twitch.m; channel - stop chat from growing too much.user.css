@@ -1,6 +1,6 @@
 /* ==UserStyle==
 @name        tv.twitch.m; channel - stop chat from growing too much
-@version     1.0.2
+@version     1.0.3
 @description 2026/01/07
 @namespace   https://github.com/ericchase/mod--twitch-web-client
 ==/UserStyle== */
@@ -10,6 +10,6 @@
     margin-top: 3.75em;
   }
   [data-a-target='chat-scroller']:not(#_) {
-    height: 50vh;
+    height: 38vw;
   }
 }
