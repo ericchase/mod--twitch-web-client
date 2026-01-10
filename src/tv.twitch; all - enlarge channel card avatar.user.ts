@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; all - enlarge channel card avatar
 // @include     /^https:\/\/www\.twitch\.tv\/?.*$/
-// @version     1.0.1
+// @version     1.0.2
 // @description 2025/10/01
 // @run-at      document-start
 // @grant       none

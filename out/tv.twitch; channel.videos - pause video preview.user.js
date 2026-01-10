@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch; channel.videos - pause video preview
 // @match       *://www.twitch.tv/*/videos
-// @version     1.0.0
+// @version     1.0.1
 // @description 2026/01/09
 // @run-at      document-start
 // @grant       none
