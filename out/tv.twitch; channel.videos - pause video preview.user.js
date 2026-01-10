@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name        tv.twitch; channel.videos - remove video preview
+// @name        tv.twitch; channel.videos - pause video preview
 // @match       *://www.twitch.tv/*/videos
 // @version     1.0.0
-// @description 2026/01/05
+// @description 2026/01/09
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
@@ -159,25 +159,23 @@ function Core_Utility_Debounce(fn, delay_ms) {
 }
 
 // src/lib/HistoryObserver.ts
+function SetupHistoryObserver() {
+  Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
+  window.history.isObserverSetUp = true;
+  window.history.onUrlChangeSubscriptions = new Set();
+  let url = window.location.toString();
+  setInterval(() => {
+    if (url !== window.location.toString()) {
+      url = window.location.toString();
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    }
+  }, 350);
+}
 function SubscribeToUrlChange(callback) {
   if (window.history.isObserverSetUp !== true) {
-    Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
-    window.history.isObserverSetUp = true;
-    window.history.onUrlChangeSubscriptions = new Set();
-    window.history.originalPushState = window.history.pushState;
-    window.history.originalReplaceState = window.history.replaceState;
-    window.history.pushState = function (...args) {
-      window.history.originalPushState.apply(this, args);
-      for (const fn of window.history.onUrlChangeSubscriptions) {
-        fn();
-      }
-    };
-    window.history.replaceState = function (...args) {
-      window.history.originalReplaceState.apply(this, args);
-      for (const fn of window.history.onUrlChangeSubscriptions) {
-        fn();
-      }
-    };
+    SetupHistoryObserver();
   }
   window.history.onUrlChangeSubscriptions.add(callback);
 }
@@ -195,14 +193,18 @@ function AutomatedModuleSetup(constructor, matches_url) {
   SubscribeToUrlChange(startup_handler);
 }
 
-// src/tv.twitch; channel.videos - remove video preview.user.ts
+// src/tv.twitch; channel.videos - pause video preview.user.ts
 class Module {
-  name = 'Remove Video Overlay';
+  name = 'Pause Video Preview';
   observer_set = new Set();
+  video_set = new Set();
   clean() {
     Core_Console_Log(`[Twitch Mod]: Clean: ${this.name}`);
     for (const observer of this.observer_set) {
       observer.disconnect();
+    }
+    for (const video of this.video_set) {
+      video.play();
     }
     this.observer_set.clear();
   }
@@ -212,12 +214,28 @@ class Module {
   }
   createObserver1() {
     const observer = WebPlatform_DOM_Element_Added_Observer_Class({
-      selector: '.persistent-player',
+      selector: 'video',
     });
     this.observer_set.add(observer);
     observer.subscribe((element) => {
-      Core_Console_Log(`[Twitch Mod]: ${this.name}: Removing Overlay:`, element);
-      element.remove();
+      if (element instanceof HTMLVideoElement) {
+        let tryToPause = function () {
+          if (video.paused !== true) {
+            video.pause();
+            setTimeout(() => {
+              done = true;
+            }, 1000);
+          }
+          if (done !== true) {
+            setTimeout(tryToPause, 25);
+          }
+        };
+        const video = element;
+        this.video_set.add(video);
+        Core_Console_Log(`[Twitch Mod]: ${this.name}: Pausing Video:`, video);
+        let done = false;
+        setTimeout(tryToPause, 25);
+      }
     });
   }
 }

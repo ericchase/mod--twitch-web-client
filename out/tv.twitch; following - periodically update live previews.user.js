@@ -159,25 +159,23 @@ function Core_Utility_Debounce(fn, delay_ms) {
 }
 
 // src/lib/HistoryObserver.ts
+function SetupHistoryObserver() {
+  Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
+  window.history.isObserverSetUp = true;
+  window.history.onUrlChangeSubscriptions = new Set();
+  let url = window.location.toString();
+  setInterval(() => {
+    if (url !== window.location.toString()) {
+      url = window.location.toString();
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    }
+  }, 350);
+}
 function SubscribeToUrlChange(callback) {
   if (window.history.isObserverSetUp !== true) {
-    Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
-    window.history.isObserverSetUp = true;
-    window.history.onUrlChangeSubscriptions = new Set();
-    window.history.originalPushState = window.history.pushState;
-    window.history.originalReplaceState = window.history.replaceState;
-    window.history.pushState = function (...args) {
-      window.history.originalPushState.apply(this, args);
-      for (const fn of window.history.onUrlChangeSubscriptions) {
-        fn();
-      }
-    };
-    window.history.replaceState = function (...args) {
-      window.history.originalReplaceState.apply(this, args);
-      for (const fn of window.history.onUrlChangeSubscriptions) {
-        fn();
-      }
-    };
+    SetupHistoryObserver();
   }
   window.history.onUrlChangeSubscriptions.add(callback);
 }

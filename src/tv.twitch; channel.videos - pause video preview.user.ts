@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name        tv.twitch; channel.videos - remove video preview
+// @name        tv.twitch; channel.videos - pause video preview
 // @match       *://www.twitch.tv/*/videos
 // @version     1.0.0
-// @description 2026/01/05
+// @description 2026/01/09
 // @run-at      document-start
 // @grant       none
 // @homepageURL https://github.com/ericchase/mod--twitch-web-client
@@ -13,13 +13,17 @@ import { Class_WebPlatform_DOM_Element_Added_Observer_Class, WebPlatform_DOM_Ele
 import { AutomatedModuleSetup, ModuleInterface } from './lib/UserScriptModule.js';
 
 class Module implements ModuleInterface {
-  name = 'Remove Video Overlay';
+  name = 'Pause Video Preview';
   observer_set = new Set<Class_WebPlatform_DOM_Element_Added_Observer_Class>();
+  video_set = new Set<HTMLVideoElement>();
 
   clean() {
     Core_Console_Log(`[Twitch Mod]: Clean: ${this.name}`);
     for (const observer of this.observer_set) {
       observer.disconnect();
+    }
+    for (const video of this.video_set) {
+      video.play();
     }
     this.observer_set.clear();
   }
@@ -31,12 +35,28 @@ class Module implements ModuleInterface {
 
   createObserver1() {
     const observer = WebPlatform_DOM_Element_Added_Observer_Class({
-      selector: '.persistent-player',
+      selector: 'video',
     });
     this.observer_set.add(observer);
     observer.subscribe((element) => {
-      Core_Console_Log(`[Twitch Mod]: ${this.name}: Removing Overlay:`, element);
-      element.remove();
+      if (element instanceof HTMLVideoElement) {
+        const video = element;
+        this.video_set.add(video);
+        Core_Console_Log(`[Twitch Mod]: ${this.name}: Pausing Video:`, video);
+        let done = false;
+        function tryToPause() {
+          if (video.paused !== true) {
+            video.pause();
+            setTimeout(() => {
+              done = true;
+            }, 1000);
+          }
+          if (done !== true) {
+            setTimeout(tryToPause, 25);
+          }
+        }
+        setTimeout(tryToPause, 25);
+      }
     });
   }
 }

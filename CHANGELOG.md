@@ -1,9 +1,14 @@
 ## 2026-02-01
 
-- `tv.twitch; channel.videos - remove video preview`
-  - Aggressively removes the video preview section when browsing `twitch.tv/<channel>/videos`
+- ~~`tv.twitch; channel.videos - remove video preview`~~
+  ~~- Aggressively removes the video preview section when browsing `twitch.tv/<channel>/videos`~~
+- `tv.twitch; channel.videos - pause video preview`
+  - Removing the preview section was a bit aggressive and unreliable. Pausing the video seems to work fine.
 - `tv.twitch.m; channel - stop chat from growing too much`
   - A fix for an issue I have with the twitch mobile site on phone
+- `HistoryObserver.ts`
+  - Twitch's react code kept overwriting `window.history.pushState` after me. Also, I'm not sure if I was even doing it correctly.
+  - I decided to just poll the window location 3 times a second. Should be ok for now.
 
 ## 2026-01-01
 
