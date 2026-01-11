@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name        tv.twitch; channel.videos - pause video preview
-// @match       *://www.twitch.tv/*/videos
-// @version     1.0.1
+// @name        tv.twitch; channel - pause video preview
+// @match       *://www.twitch.tv/*
+// @version     1.0.2
 // @description 2026/01/09
 // @run-at      document-start
 // @grant       none
@@ -11,6 +11,48 @@
 // src/lib/ericchase/Core_Console_Log.ts
 function Core_Console_Log(...items) {
   console['log'](...items);
+}
+
+// src/lib/ericchase/WebPlatform_DOM_Attribute_Observer_Class.ts
+class Class_WebPlatform_DOM_Attribute_Observer_Class {
+  $mutation_observer;
+  $subscription_set = new Set();
+  constructor(config) {
+    config.options ??= {};
+    this.$mutation_observer = new MutationObserver((mutationRecords) => {
+      for (const record of mutationRecords) {
+        this.$send(record);
+      }
+    });
+    this.$mutation_observer.observe(config.source ?? document.documentElement, {
+      attributes: true,
+      attributeFilter: config.options.attributeFilter,
+      attributeOldValue: config.options.attributeOldValue ?? true,
+      subtree: config.options.subtree ?? true,
+    });
+  }
+  disconnect() {
+    this.$mutation_observer.disconnect();
+    for (const callback of this.$subscription_set) {
+      this.$subscription_set.delete(callback);
+    }
+  }
+  subscribe(callback) {
+    this.$subscription_set.add(callback);
+    return () => {
+      this.$subscription_set.delete(callback);
+    };
+  }
+  $send(record) {
+    for (const callback of this.$subscription_set) {
+      callback(record, () => {
+        this.$subscription_set.delete(callback);
+      });
+    }
+  }
+}
+function WebPlatform_DOM_Attribute_Observer_Class(config) {
+  return new Class_WebPlatform_DOM_Attribute_Observer_Class(config);
 }
 
 // src/lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.ts
@@ -193,24 +235,32 @@ function AutomatedModuleSetup(constructor, matches_url) {
   SubscribeToUrlChange(startup_handler);
 }
 
-// src/tv.twitch; channel.videos - pause video preview.user.ts
+// src/tv.twitch; channel - pause video preview.user.ts
 class Module {
   name = 'Pause Video Preview';
   observer_set = new Set();
   video_set = new Set();
+  mode_is_pause = false;
   clean() {
     Core_Console_Log(`[Twitch Mod]: Clean: ${this.name}`);
     for (const observer of this.observer_set) {
       observer.disconnect();
     }
-    for (const video of this.video_set) {
-      video.play();
+    for (const element of this.video_set) {
+      if (this.mode_is_pause === true) {
+        element.pause();
+      } else {
+        element.play();
+      }
     }
     this.observer_set.clear();
+    this.video_set.clear();
+    this.mode_is_pause = false;
   }
   setup() {
     Core_Console_Log(`[Twitch Mod]: Setup: ${this.name}`);
     this.createObserver1();
+    this.createObserver2();
   }
   createObserver1() {
     const observer = WebPlatform_DOM_Element_Added_Observer_Class({
@@ -219,24 +269,151 @@ class Module {
     this.observer_set.add(observer);
     observer.subscribe((element) => {
       if (element instanceof HTMLVideoElement) {
-        let tryToPause = function () {
-          if (video.paused !== true) {
-            video.pause();
-            setTimeout(() => {
-              done = true;
-            }, 1000);
-          }
-          if (done !== true) {
-            setTimeout(tryToPause, 25);
-          }
-        };
-        const video = element;
-        this.video_set.add(video);
-        Core_Console_Log(`[Twitch Mod]: ${this.name}: Pausing Video:`, video);
-        let done = false;
-        setTimeout(tryToPause, 25);
+        this.video_set.add(element);
+        this.createObserver1B(element);
+        if (this.mode_is_pause === true) {
+          this.pauseVideo(element);
+        } else {
+          this.playVideo(element);
+        }
       }
     });
   }
+  createObserver1B(element) {
+    const observer = WebPlatform_DOM_Attribute_Observer_Class({
+      options: {
+        attributeFilter: ['src'],
+      },
+      source: element,
+    });
+    this.observer_set.add(observer);
+    observer.subscribe(() => {
+      if (this.mode_is_pause === true) {
+        this.pauseVideo(element);
+      } else {
+        this.playVideo(element);
+      }
+    });
+  }
+  createObserver2() {
+    const observer = WebPlatform_DOM_Element_Added_Observer_Class({
+      selector: '.channel-info-content > section',
+    });
+    this.observer_set.add(observer);
+    observer.subscribe((element) => {
+      if (element instanceof HTMLElement) {
+        this.createObserver2B(element);
+        this.processSectionElement(element);
+      }
+    });
+  }
+  createObserver2B(element) {
+    const observer = WebPlatform_DOM_Attribute_Observer_Class({
+      options: {
+        attributeFilter: ['id'],
+      },
+      source: element,
+    });
+    this.observer_set.add(observer);
+    observer.subscribe(() => {
+      this.processSectionElement(element);
+    });
+  }
+  processSectionElement(element) {
+    switch (element.getAttribute('id')) {
+      case 'live-channel-stream-information':
+        this.mode_is_pause = false;
+        this.playVideos();
+        break;
+      case 'offline-channel-main-content':
+        this.mode_is_pause = true;
+        this.pauseVideos();
+        break;
+    }
+  }
+  pauseVideos() {
+    for (const element of this.video_set) {
+      this.pauseVideo(element);
+    }
+  }
+  pauseVideo(element) {
+    element.pause();
+    const onLoadedData = (event) => {
+      const element2 = event.currentTarget;
+      if (element2 instanceof HTMLVideoElement) {
+        if (this.mode_is_pause === true) {
+          element2.pause();
+        } else {
+          element2.play();
+        }
+      }
+    };
+    const onPlay = (event) => {
+      const element2 = event.currentTarget;
+      if (element2 instanceof HTMLVideoElement) {
+        if (this.mode_is_pause === true) {
+          element2.pause();
+        }
+      }
+    };
+    const onPlaying = (event) => {
+      const element2 = event.currentTarget;
+      if (element2 instanceof HTMLVideoElement) {
+        if (this.mode_is_pause === true) {
+          element2.pause();
+        }
+      }
+    };
+    element.addEventListener('loadeddata', onLoadedData);
+    element.addEventListener('play', onPlay);
+    element.addEventListener('playing', onPlaying);
+    setTimeout(() => {
+      element.removeEventListener('loadeddata', onLoadedData);
+      element.removeEventListener('play', onPlay);
+      element.removeEventListener('playing', onPlaying);
+    }, 5000);
+  }
+  playVideos() {
+    for (const element of this.video_set) {
+      this.playVideo(element);
+    }
+  }
+  playVideo(element) {
+    element.play();
+    const onLoadedData = (event) => {
+      const element2 = event.currentTarget;
+      if (element2 instanceof HTMLVideoElement) {
+        if (this.mode_is_pause === true) {
+          element2.pause();
+        } else {
+          element2.play();
+        }
+      }
+    };
+    const onPlay = (event) => {
+      const element2 = event.currentTarget;
+      if (element2 instanceof HTMLVideoElement) {
+        if (this.mode_is_pause === true) {
+          element2.pause();
+        }
+      }
+    };
+    const onPlaying = (event) => {
+      const element2 = event.currentTarget;
+      if (element2 instanceof HTMLVideoElement) {
+        if (this.mode_is_pause === true) {
+          element2.pause();
+        }
+      }
+    };
+    element.addEventListener('loadeddata', onLoadedData);
+    element.addEventListener('play', onPlay);
+    element.addEventListener('playing', onPlaying);
+    setTimeout(() => {
+      element.removeEventListener('loadeddata', onLoadedData);
+      element.removeEventListener('play', onPlay);
+      element.removeEventListener('playing', onPlaying);
+    }, 5000);
+  }
 }
-AutomatedModuleSetup(Module, () => window.location.pathname.endsWith('/videos'));
+AutomatedModuleSetup(Module, () => !window.location.pathname.startsWith('/directory'));
