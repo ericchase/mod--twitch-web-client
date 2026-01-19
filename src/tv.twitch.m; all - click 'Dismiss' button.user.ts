@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch.m; all - click 'Dismiss' button
-// @match       *://www.twitch.tv/*
-// @version     1.0.0
+// @match       *://m.twitch.tv/*
+// @version     1.0.1
 // @description 2026/01/19
 // @run-at      document-start
 // @grant       none
