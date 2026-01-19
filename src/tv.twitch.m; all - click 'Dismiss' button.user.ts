@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch.m; all - click 'Dismiss' button
 // @match       *://m.twitch.tv/*
-// @version     1.0.1
+// @version     1.0.2
 // @description 2026/01/19
 // @run-at      document-start
 // @grant       none
@@ -10,7 +10,7 @@
 
 import { Core_Console_Log } from './lib/ericchase/Core_Console_Log.js';
 import { Class_WebPlatform_DOM_Element_Added_Observer_Class, WebPlatform_DOM_Element_Added_Observer_Class } from './lib/ericchase/WebPlatform_DOM_Element_Added_Observer_Class.js';
-import { ModuleInterface } from './lib/UserScriptModule.js';
+import { AutomatedModuleSetup, ModuleInterface } from './lib/UserScriptModule.js';
 
 class Module implements ModuleInterface {
   name = 'Click Dismiss Button';
@@ -43,4 +43,4 @@ class Module implements ModuleInterface {
   }
 }
 
-new Module();
+AutomatedModuleSetup(Module, () => true);

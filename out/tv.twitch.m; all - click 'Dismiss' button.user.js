@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        tv.twitch.m; all - click 'Dismiss' button
 // @match       *://m.twitch.tv/*
-// @version     1.0.1
+// @version     1.0.2
 // @description 2026/01/19
 // @run-at      document-start
 // @grant       none
@@ -113,6 +113,86 @@ function WebPlatform_DOM_Element_Added_Observer_Class(config) {
   return new Class_WebPlatform_DOM_Element_Added_Observer_Class(config);
 }
 
+// src/lib/ericchase/Core_Promise_Deferred_Class.ts
+class Class_Core_Promise_Deferred_Class {
+  promise;
+  reject;
+  resolve;
+  constructor() {
+    this.promise = new Promise((resolve, reject) => {
+      this.resolve = resolve;
+      this.reject = reject;
+    });
+    if (this.resolve === undefined || this.reject === undefined) {
+      throw new Error(`${Class_Core_Promise_Deferred_Class.name}'s constructor failed to setup promise functions.`);
+    }
+  }
+}
+function Core_Promise_Deferred_Class() {
+  return new Class_Core_Promise_Deferred_Class();
+}
+
+// src/lib/ericchase/Core_Promise_Orphan.ts
+function Core_Promise_Orphan(promise) {}
+
+// src/lib/ericchase/Core_Utility_Debounce.ts
+function Core_Utility_Debounce(fn, delay_ms) {
+  let deferred = Core_Promise_Deferred_Class();
+  let timeout = undefined;
+  async function async_callback(...args) {
+    try {
+      await fn(...args);
+      deferred.resolve();
+    } catch (error) {
+      deferred.reject(error);
+    } finally {
+      deferred = Core_Promise_Deferred_Class();
+    }
+  }
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      Core_Promise_Orphan(async_callback(...args));
+    }, delay_ms);
+    return deferred.promise;
+  };
+}
+
+// src/lib/HistoryObserver.ts
+function SetupHistoryObserver() {
+  Core_Console_Log(`[Twitch Mod]: Setup: History Observer`);
+  window.history.isObserverSetUp = true;
+  window.history.onUrlChangeSubscriptions = new Set();
+  let url = window.location.toString();
+  setInterval(() => {
+    if (url !== window.location.toString()) {
+      url = window.location.toString();
+      for (const fn of window.history.onUrlChangeSubscriptions) {
+        fn();
+      }
+    }
+  }, 350);
+}
+function SubscribeToUrlChange(callback) {
+  if (window.history.isObserverSetUp !== true) {
+    SetupHistoryObserver();
+  }
+  window.history.onUrlChangeSubscriptions.add(callback);
+}
+
+// src/lib/UserScriptModule.ts
+function AutomatedModuleSetup(constructor, matches_url) {
+  const module_instance = new constructor();
+  const startup_handler = Core_Utility_Debounce(() => {
+    module_instance.clean();
+    if (matches_url()) {
+      module_instance.setup();
+    }
+  }, 1000);
+  startup_handler();
+  SubscribeToUrlChange(startup_handler);
+}
+
 // src/tv.twitch.m; all - click 'Dismiss' button.user.ts
 class Module {
   name = 'Click Dismiss Button';
@@ -141,4 +221,4 @@ class Module {
     });
   }
 }
-new Module();
+AutomatedModuleSetup(Module, () => true);
